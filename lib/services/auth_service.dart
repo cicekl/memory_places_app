@@ -24,8 +24,8 @@ Future<UserCredential> signUp ({
       );
     await userCredentials.user!.updateDisplayName(fullName);
     return userCredentials;
-    } on FirebaseAuthException catch(error) {
-      throw error;
+    } on FirebaseAuthException{
+      rethrow;
     }
 
   }
@@ -42,11 +42,15 @@ Future<UserCredential> signIn({
 
   return userCredentials; 
   
-  } on FirebaseAuthException catch (error) {
-    throw error;
+  } on FirebaseAuthException {
+    rethrow;
   }
 
-
 }
+
+Future<void> logout () {
+  return _firebase.signOut();
+}
+
 
 }

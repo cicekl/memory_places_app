@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:memory_places_app/screens/dashboard.dart';
 import 'package:memory_places_app/screens/register.dart';
 import 'package:memory_places_app/services/auth_service.dart';
 import 'package:memory_places_app/widgets/primary_button.dart';
@@ -22,6 +23,7 @@ var _enteredEmail = '';
 var _enteredPassword = '';
 final _authService = AuthService();
 
+
 void _submit () async {
 final isValid = _formKey.currentState!.validate();
 
@@ -32,11 +34,17 @@ if(!isValid) {
   _formKey.currentState!.save();
 
   try {
-    final userCredentials = await _authService.signIn(
+    await _authService.signIn(
       email: _enteredEmail, 
       password: _enteredPassword);
 
-    print(userCredentials);
+    if (!mounted) return;
+
+   Navigator.of(context).pushReplacement(
+    MaterialPageRoute(
+      builder: (ctx) => const DashboardScreen(),
+    ),
+  );
 
   }catch(error) {
     ScaffoldMessenger.of(context).clearSnackBars();
@@ -190,7 +198,7 @@ void _changeAuthScreen() {
                     ),
                   ),
               ),
-                            )
+              )
             ],
           ),
         ),

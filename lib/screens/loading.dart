@@ -1,5 +1,7 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:memory_places_app/screens/dashboard.dart';
 import 'package:memory_places_app/screens/landing_page.dart';
 
 class LoadingScreen extends StatefulWidget {
@@ -16,15 +18,23 @@ const LoadingScreen ({super.key});
 
 class _LoadingScreenState extends State<LoadingScreen> {
 
-
 @override
   void initState() {
     super.initState();
     Future.delayed(const Duration(
       seconds: 3),
       () {
+        if (!mounted) return;
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => LandingPageScreen()),
+          MaterialPageRoute(builder: (context) => StreamBuilder(
+            stream: FirebaseAuth.instance.authStateChanges(),
+            builder: (context, asyncSnapshot) {
+              if(asyncSnapshot.hasData) {
+                return DashboardScreen();
+              }
+              return const LandingPageScreen();
+            }
+          )),
         );
       }
     );

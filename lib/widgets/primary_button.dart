@@ -9,7 +9,7 @@ final void Function() onPress;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return SizedBox(
       width: 368,
       height: 57,
       child: ElevatedButton(
