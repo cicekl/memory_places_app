@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:memory_places_app/screens/add_place.dart';
+import 'package:memory_places_app/screens/login.dart';
 import 'package:memory_places_app/services/auth_service.dart';
 import 'package:memory_places_app/widgets/category_chip.dart';
+import 'package:memory_places_app/widgets/place_card.dart';
 
 class DashboardScreen extends StatefulWidget{
 
@@ -13,9 +16,17 @@ const DashboardScreen ({super.key});
 
 }
 
+
+
 class _DashboardScreenState extends State<DashboardScreen> {
 
   final _authService = AuthService();
+
+  void _addPlace() async{
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (ctx) => AddPlaceScreen(),),
+    );
+  }
 
 
   @override
@@ -23,9 +34,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        scrolledUnderElevation: 0,
         actions: [
           IconButton(onPressed: () {
             _authService.logout();
+
+             if (!context.mounted) return;
+
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(
+                builder: (context) => const LoginScreen(),
+              ),
+            );
           }, icon: Icon(Icons.exit_to_app, color: Color(0xFF728B25)))
         ],
         automaticallyImplyLeading: false,
@@ -48,6 +69,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ], 
         ),
       ),
+      bottomNavigationBar: BottomNavigationBar(
+        backgroundColor: Colors.white,
+        type: BottomNavigationBarType.fixed,
+        selectedLabelStyle: TextStyle(
+          color: Color(0xFF728B25),
+        ),
+        onTap: (value) {
+        },
+        items: const [
+            BottomNavigationBarItem(
+            icon: Icon(Icons.favorite_sharp,
+            color: Color(0xFF728B25),),
+            label: 'Places',
+            ),
+            BottomNavigationBarItem(
+            icon: Icon(Icons.camera_alt_outlined,
+            color: Color(0xFF728B25),),
+            label: 'Camera',
+            ),
+            BottomNavigationBarItem(
+            icon: Icon(Icons.map_outlined,
+            color: Color(0xFF728B25),),
+            label: 'Map',
+            ),
+            BottomNavigationBarItem(
+            icon: Icon(Icons.settings_sharp,
+            color: Color(0xFF728B25),),
+            label: 'Settings',
+            ),
+        ],),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -107,14 +158,61 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
     ),
     const SizedBox(height: 30,),
-    Text('Recent memories',
-    style: Theme.of(context).textTheme.titleLarge!.copyWith(
-      fontFamily: 'RobotoSlab',
-      fontSize: 23,
-    ),)
+    Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Text('Recent memories',
+        style: Theme.of(context).textTheme.titleLarge!.copyWith(
+          fontFamily: 'RobotoSlab',
+          fontSize: 23,
+        ),),
+      Row(
+        children: [
+          Icon(Icons.map_outlined,
+          size: 23,
+          color: Color(0xFF728B25),),
+          const SizedBox(width: 5,),
+          Text('Map View',
+          style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+            color: Color(0xFF728B25),
+            fontSize: 16,
+          ),),
         ],
-        ),
       ),
+      ],
+    ),
+    const SizedBox(height: 20,),
+   Expanded(
+  child: GridView(
+    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+      crossAxisCount: 2,
+      childAspectRatio: 0.75,
+      crossAxisSpacing: 3,
+      mainAxisSpacing: 10,
+    ),
+    children: [
+      PlaceCard(),
+      PlaceCard(),
+      PlaceCard(),
+      PlaceCard(),
+    ],
+  ),
+),
+    ],    
+ ),  
+      ),
+      floatingActionButton: FloatingActionButton(
+        shape: const CircleBorder(),
+        onPressed: (){
+          _addPlace();
+        },
+        backgroundColor: Color(0xFF728B25),
+        child: Icon(Icons.add,
+        color: Colors.white,
+        size: 30,),
+        ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 }
