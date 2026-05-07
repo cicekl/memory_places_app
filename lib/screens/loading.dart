@@ -1,8 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
-import 'package:memory_places_app/screens/dashboard.dart';
 import 'package:memory_places_app/screens/landing_page.dart';
+import 'package:memory_places_app/screens/tabs.dart';
 
 class LoadingScreen extends StatefulWidget {
 
@@ -30,7 +30,7 @@ class _LoadingScreenState extends State<LoadingScreen> {
             stream: FirebaseAuth.instance.authStateChanges(),
             builder: (context, asyncSnapshot) {
               if(asyncSnapshot.hasData) {
-                return DashboardScreen();
+                return TabsScreen();
               }
               return const LandingPageScreen();
             }

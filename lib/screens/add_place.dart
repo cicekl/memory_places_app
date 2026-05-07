@@ -51,7 +51,26 @@ class _AddPlaceScreenState extends State<AddPlaceScreen> {
               fontFamily: 'RobotoSlab',
               fontSize: 23,
             ),),
-           //TODO: take photo i choose photo kartice
+            const SizedBox(height: 10,),
+           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+             children: [
+               SizedBox(
+                width: 170,
+                height: 150,
+                child: Placeholder(
+                  color: Color(0xFF728B25),
+                ),
+                ),
+                SizedBox(
+                width: 170,
+                height: 150,
+                child: Placeholder(
+                  color: Color(0xFF728B25),
+                ),
+                ),
+             ],
+           ),
            const SizedBox(height: 20,),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -160,7 +179,45 @@ class _AddPlaceScreenState extends State<AddPlaceScreen> {
               fontFamily: 'RobotoSlab',
               fontSize: 23,),
               ),
-               //TODO categories
+                const SizedBox(height: 10,),
+              GridView.count(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisCount: 2,
+              crossAxisSpacing: 10,
+              mainAxisSpacing: 10,
+              childAspectRatio: 4.2,
+              children: [
+                SizedBox(
+                  width: 170,
+                  height: 40,
+                  child: const Placeholder(
+                    color: Color(0xFF728B25),
+                  ),
+                ),
+                SizedBox(
+                  width: 170,
+                  height: 40,
+                  child: const Placeholder(
+                    color: Color(0xFF728B25),
+                  ),
+                ),
+                SizedBox(
+                  width: 170,
+                  height: 40,
+                  child: const Placeholder(
+                    color: Color(0xFF728B25),
+                  ),
+                ),
+                SizedBox(
+                  width: 170,
+                  height: 40,
+                  child: const Placeholder(
+                    color: Color(0xFF728B25),
+                  ),
+                ),
+              ],
+            ), 
                 const SizedBox(height: 30,),
                 Text('Notes (optional)',
                 style: Theme.of(context).textTheme.titleLarge!.copyWith(

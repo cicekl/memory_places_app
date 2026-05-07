@@ -1,7 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:memory_places_app/screens/dashboard.dart';
 import 'package:memory_places_app/screens/register.dart';
+import 'package:memory_places_app/screens/tabs.dart';
 import 'package:memory_places_app/services/auth_service.dart';
 import 'package:memory_places_app/widgets/primary_button.dart';
 
@@ -42,7 +42,7 @@ if(!isValid) {
 
    Navigator.of(context).pushReplacement(
     MaterialPageRoute(
-      builder: (ctx) => const DashboardScreen(),
+      builder: (ctx) => const TabsScreen(),
     ),
   );
 

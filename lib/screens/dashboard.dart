@@ -69,36 +69,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ], 
         ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: Colors.white,
-        type: BottomNavigationBarType.fixed,
-        selectedLabelStyle: TextStyle(
-          color: Color(0xFF728B25),
-        ),
-        onTap: (value) {
-        },
-        items: const [
-            BottomNavigationBarItem(
-            icon: Icon(Icons.favorite_sharp,
-            color: Color(0xFF728B25),),
-            label: 'Places',
-            ),
-            BottomNavigationBarItem(
-            icon: Icon(Icons.camera_alt_outlined,
-            color: Color(0xFF728B25),),
-            label: 'Camera',
-            ),
-            BottomNavigationBarItem(
-            icon: Icon(Icons.map_outlined,
-            color: Color(0xFF728B25),),
-            label: 'Map',
-            ),
-            BottomNavigationBarItem(
-            icon: Icon(Icons.settings_sharp,
-            color: Color(0xFF728B25),),
-            label: 'Settings',
-            ),
-        ],),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
