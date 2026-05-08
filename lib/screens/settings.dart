@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:memory_places_app/screens/edit_profile.dart';
+import 'package:memory_places_app/screens/help.dart';
 import 'package:memory_places_app/screens/login.dart';
+import 'package:memory_places_app/screens/manage_categories.dart';
+import 'package:memory_places_app/screens/notifications.dart';
 import 'package:memory_places_app/services/auth_service.dart';
 import 'package:memory_places_app/widgets/settings_option.dart';
 
@@ -10,8 +14,44 @@ class SettingsScreen extends StatelessWidget{
 final _authService = AuthService();
 
 
+
 @override
   Widget build(BuildContext context) {
+
+
+    void _openEditProfile() {
+      Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const EditProfileScreen(),
+      ),
+    );
+    }
+
+    void _openManageCategories() {
+      Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const ManageCategoriesScreen(),
+      ),
+    );
+    }
+
+    void _openNotifications() {
+      Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const NotificationsScreen(),
+      ),
+    );
+    }
+
+    void _openHelp() {
+      Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const HelpScreen(),
+      ),
+    );
+    }
+
+
     return Scaffold(
       appBar: AppBar(
       toolbarHeight: 130,
@@ -82,22 +122,26 @@ final _authService = AuthService();
           SettingsOption(option: 'Edit profile', 
           description: 'Edit your information', 
           icon: Icons.person_outline, 
-          color: Color(0xFF728B25),),
+          color: Color(0xFF728B25),
+          onPress:  _openEditProfile,),
           const SizedBox(height: 10,),
           SettingsOption(option: 'Categories', 
           description: 'Manage place types', 
           icon: Icons.star_outline_outlined, 
-          color: Color(0xFFF19E39),),
+          color: Color(0xFFF19E39),
+          onPress: _openManageCategories,),
           const SizedBox(height: 10,),
           SettingsOption(option: 'Notifications', 
           description: 'Manage notifications', 
           icon: Icons.notifications_outlined, 
-          color: Color(0xFF728B25),),
+          color: Color(0xFF728B25),
+          onPress: _openNotifications,),
           const SizedBox(height: 10,),
           SettingsOption(option: 'Help', 
           description: 'Learn how to use the app', 
           icon: Icons.help_outline, 
-          color: Color(0xFFF19E39),),
+          color: Color(0xFFF19E39),
+          onPress: _openHelp,),
           const SizedBox(height: 50,),
           SizedBox(
           width: 368,

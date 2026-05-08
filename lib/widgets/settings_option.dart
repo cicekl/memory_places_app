@@ -6,12 +6,14 @@ const SettingsOption ({super.key,
 required this.option, 
 required this.description, 
 required this.icon, 
-required this.color});
+required this.color,
+required this.onPress});
 
 final String option;
 final String description;
 final IconData icon;
 final Color color;
+final void Function() onPress;
 
 @override
   Widget build(BuildContext context) {
@@ -53,7 +55,7 @@ final Color color;
                     ),
                     const Spacer(),
                      IconButton(
-                      onPressed: () {}, 
+                      onPressed: onPress, 
                       icon: Icon(Icons.keyboard_arrow_right_rounded,
                       color: Color(0xFF728B25),),)
                   ],
