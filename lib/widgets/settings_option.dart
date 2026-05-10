@@ -57,7 +57,8 @@ final void Function() onPress;
                      IconButton(
                       onPressed: onPress, 
                       icon: Icon(Icons.keyboard_arrow_right_rounded,
-                      color: Color(0xFF728B25),),)
+                      color: Color(0xFF728B25),)
+                      ,)
                   ],
                 ),
               ),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:memory_places_app/screens/camera.dart';
 import 'package:memory_places_app/screens/dashboard.dart';
-import 'package:memory_places_app/screens/map.dart';
+import 'package:memory_places_app/screens/statistics.dart';
 import 'package:memory_places_app/screens/settings.dart';
 
 class TabsScreen extends StatefulWidget {
@@ -31,7 +31,7 @@ class _TabsScreenState extends State<TabsScreen> {
   if (index == 2) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => const MapScreen(),
+        builder: (context) => const StatisticsScreen(),
       ),
     );
     return;
@@ -80,9 +80,9 @@ class _TabsScreenState extends State<TabsScreen> {
             label: 'Camera',
             ),
             BottomNavigationBarItem(
-            icon: Icon(Icons.map_outlined,
+            icon: Icon(Icons.trending_up,
             color: Color(0xFF728B25),),
-            label: 'Map',
+            label: 'Statistics',
             ),
             BottomNavigationBarItem(
             icon: Icon(Icons.settings_sharp,

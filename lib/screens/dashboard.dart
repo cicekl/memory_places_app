@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:memory_places_app/screens/add_place.dart';
 import 'package:memory_places_app/screens/login.dart';
+import 'package:memory_places_app/screens/statistics.dart';
 import 'package:memory_places_app/services/auth_service.dart';
 import 'package:memory_places_app/widgets/category_chip.dart';
 import 'package:memory_places_app/widgets/place_card.dart';
@@ -137,18 +138,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
           fontFamily: 'RobotoSlab',
           fontSize: 23,
         ),),
-      Row(
-        children: [
-          Icon(Icons.map_outlined,
-          size: 23,
-          color: Color(0xFF728B25),),
-          const SizedBox(width: 5,),
-          Text('Map View',
-          style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-            color: Color(0xFF728B25),
-            fontSize: 16,
-          ),),
-        ],
+      InkWell(
+        onTap: () {
+          Navigator.of(context).push(
+          MaterialPageRoute(
+          builder: (context) => const StatisticsScreen(),
+      ),
+    );
+        },
+        child: Row(
+          children: [
+            Icon(Icons.trending_up,
+            size: 23,
+            color: Color(0xFF728B25),),
+            const SizedBox(width: 5,),
+            Text('Statistics',
+            style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+              color: Color(0xFF728B25),
+              fontSize: 16,
+            ),),
+          ],
+        ),
       ),
       ],
     ),
