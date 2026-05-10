@@ -19,7 +19,7 @@ final _authService = AuthService();
   Widget build(BuildContext context) {
 
 
-    void _openEditProfile() {
+    void openEditProfile() {
       Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => const EditProfileScreen(),
@@ -27,7 +27,7 @@ final _authService = AuthService();
     );
     }
 
-    void _openManageCategories() {
+    void openManageCategories() {
       Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => const ManageCategoriesScreen(),
@@ -35,7 +35,7 @@ final _authService = AuthService();
     );
     }
 
-    void _openNotifications() {
+    void openNotifications() {
       Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => const NotificationsScreen(),
@@ -43,7 +43,7 @@ final _authService = AuthService();
     );
     }
 
-    void _openHelp() {
+    void openHelp() {
       Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => const HelpScreen(),
@@ -123,25 +123,25 @@ final _authService = AuthService();
           description: 'Edit your information', 
           icon: Icons.person_outline, 
           color: Color(0xFF728B25),
-          onPress:  _openEditProfile,),
+          onPress:  openEditProfile,),
           const SizedBox(height: 10,),
           SettingsOption(option: 'Categories', 
           description: 'Manage place types', 
           icon: Icons.star_outline_outlined, 
           color: Color(0xFFF19E39),
-          onPress: _openManageCategories,),
+          onPress: openManageCategories,),
           const SizedBox(height: 10,),
           SettingsOption(option: 'Notifications', 
           description: 'Manage notifications', 
           icon: Icons.notifications_outlined, 
           color: Color(0xFF728B25),
-          onPress: _openNotifications,),
+          onPress: openNotifications,),
           const SizedBox(height: 10,),
           SettingsOption(option: 'Help', 
           description: 'Learn how to use the app', 
           icon: Icons.help_outline, 
           color: Color(0xFFF19E39),
-          onPress: _openHelp,),
+          onPress: openHelp,),
           const SizedBox(height: 50,),
           SizedBox(
           width: 368,

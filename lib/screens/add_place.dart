@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:memory_places_app/widgets/image_input.dart';
+import 'dart:io';
 
 class AddPlaceScreen extends StatefulWidget{
 
@@ -17,6 +20,57 @@ class _AddPlaceScreenState extends State<AddPlaceScreen> {
   void _close() {
     Navigator.of(context).pop();
   }
+
+  File? _selectedImage;
+
+  void _setImage(File image) {
+  setState(() {
+    _selectedImage = image;
+  });
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+  final imagePicker = ImagePicker();
+
+  final pickedImage = await imagePicker.pickImage(
+    source: source,
+    maxHeight: 600,
+  );
+
+  if (pickedImage == null) return;
+
+    _setImage(File(pickedImage.path));
+  }
+
+  void _showImageSourceOptions() {
+  showModalBottomSheet(
+    context: context,
+    builder: (ctx) {
+      return SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt_outlined),
+              title: const Text('Take photo'),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                _pickImage(ImageSource.camera);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('Upload photo'),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                _pickImage(ImageSource.gallery);
+              },
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
 
   @override
   Widget build(BuildContext context) {
@@ -52,25 +106,44 @@ class _AddPlaceScreenState extends State<AddPlaceScreen> {
               fontSize: 23,
             ),),
             const SizedBox(height: 10,),
-           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-             children: [
-               SizedBox(
-                width: 170,
-                height: 150,
-                child: Placeholder(
-                  color: Color(0xFF728B25),
-                ),
-                ),
-                SizedBox(
-                width: 170,
-                height: 150,
-                child: Placeholder(
-                  color: Color(0xFF728B25),
-                ),
-                ),
-             ],
-           ),
+           _selectedImage == null ? Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          ImageInput(
+          label: 'Take photo',
+          icon: Icons.camera_alt_outlined,
+          onTap: () => _pickImage(ImageSource.camera),
+        ),
+          ImageInput(
+          label: 'Upload photo',
+          icon: Icons.camera_alt_outlined,
+          onTap: () => _pickImage(ImageSource.gallery),
+        ),
+        ],
+      )
+    : GestureDetector(
+        onTap: _showImageSourceOptions,
+        child: Container(
+          width: double.infinity,
+          height: 350,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: const Color(0xFF8A9B61),
+              width: 1.5,
+            ),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(18),
+            child: Image.file(
+              _selectedImage!,
+              fit: BoxFit.cover,
+              width: double.infinity,
+              height: double.infinity,
+            ),
+          ),
+        ),
+      ),
            const SizedBox(height: 20,),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,

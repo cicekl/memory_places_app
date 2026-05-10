@@ -17,7 +17,7 @@ class InputField extends StatelessWidget{
         Text(inputText,
                 style: Theme.of(context).textTheme.titleLarge!.copyWith(
               fontFamily: 'RobotoSlab',
-              fontSize: 20,),
+              fontSize: 18,),
               ),
         SizedBox(height: 10),
         TextFormField(
