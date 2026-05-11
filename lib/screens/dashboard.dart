@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:memory_places_app/screens/add_place.dart';
 import 'package:memory_places_app/screens/login.dart';
+import 'package:memory_places_app/screens/place_details.dart';
 import 'package:memory_places_app/screens/statistics.dart';
 import 'package:memory_places_app/services/auth_service.dart';
 import 'package:memory_places_app/widgets/category_chip.dart';
@@ -27,6 +28,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     await Navigator.of(context).push(
       MaterialPageRoute(builder: (ctx) => AddPlaceScreen(),),
     );
+  }
+
+  void selectPlace() {
+    Navigator.of(context).push(MaterialPageRoute(builder: (context) => PlaceDetailsScreen()));
   }
 
 
@@ -172,10 +177,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       mainAxisSpacing: 10,
     ),
     children: [
-      PlaceCard(),
-      PlaceCard(),
-      PlaceCard(),
-      PlaceCard(),
+      PlaceCard(onSelectPlace: selectPlace,),
+      PlaceCard(onSelectPlace: selectPlace,),
+      PlaceCard(onSelectPlace: selectPlace,),
+      PlaceCard(onSelectPlace: selectPlace,),
     ],
   ),
 ),

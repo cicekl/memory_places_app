@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:memory_places_app/screens/camera.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:memory_places_app/screens/add_place.dart';
 import 'package:memory_places_app/screens/dashboard.dart';
 import 'package:memory_places_app/screens/statistics.dart';
 import 'package:memory_places_app/screens/settings.dart';
+import 'dart:io';
 
 class TabsScreen extends StatefulWidget {
   const TabsScreen ({super.key});
@@ -16,15 +18,33 @@ class TabsScreen extends StatefulWidget {
 
 class _TabsScreenState extends State<TabsScreen> {
 
+  Future<void> _openCameraAndAddPlace() async {
+  final imagePicker = ImagePicker();
+
+  final pickedImage = await imagePicker.pickImage(
+    source: ImageSource.camera,
+    maxHeight: 600,
+  );
+
+  if (pickedImage == null) return;
+
+  if (!mounted) return;
+
+  Navigator.of(context).push(
+    MaterialPageRoute(
+      builder: (context) => AddPlaceScreen(
+        initialImage: File(pickedImage.path),
+      ),
+    ),
+  );
+}
+
+
   int _selectedPageIndex = 0;
 
  void _selectPage(int index) {
   if (index == 1) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const CameraScreen(),
-      ),
-    );
+    _openCameraAndAddPlace();
     return;
   }
 

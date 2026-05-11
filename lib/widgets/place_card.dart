@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 
 class PlaceCard extends StatefulWidget{
 
-  const PlaceCard ({super.key});
+  const PlaceCard ({super.key,
+  required this.onSelectPlace});
+
+  final void Function() onSelectPlace;
 
 
 @override
@@ -23,7 +26,9 @@ class _PlaceCardState extends State<PlaceCard> {
       borderRadius: BorderRadiusGeometry.circular(20)),
       clipBehavior: Clip.hardEdge,
       child: InkWell(
-        onTap: () => {},
+        onTap: () {
+          widget.onSelectPlace();
+        },
         child: Column(
           children: [
             ClipRRect(

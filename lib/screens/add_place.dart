@@ -3,9 +3,14 @@ import 'package:image_picker/image_picker.dart';
 import 'package:memory_places_app/widgets/image_input.dart';
 import 'dart:io';
 
+import 'package:memory_places_app/widgets/selectable_category.dart';
+
 class AddPlaceScreen extends StatefulWidget{
 
-const AddPlaceScreen ({super.key});
+const AddPlaceScreen ({super.key,
+this.initialImage});
+
+final File? initialImage;
 
 
 @override
@@ -13,12 +18,19 @@ const AddPlaceScreen ({super.key});
     return _AddPlaceScreenState();
   }
 
+
 }
 
 class _AddPlaceScreenState extends State<AddPlaceScreen> {
 
   void _close() {
     Navigator.of(context).pop();
+  }
+
+@override
+  void initState() {
+    super.initState();
+    _selectedImage = widget.initialImage;
   }
 
   File? _selectedImage;
@@ -252,45 +264,25 @@ class _AddPlaceScreenState extends State<AddPlaceScreen> {
               fontFamily: 'RobotoSlab',
               fontSize: 23,),
               ),
-                const SizedBox(height: 10,),
-              GridView.count(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisCount: 2,
-              crossAxisSpacing: 10,
-              mainAxisSpacing: 10,
-              childAspectRatio: 4.2,
-              children: [
-                SizedBox(
-                  width: 170,
-                  height: 40,
-                  child: const Placeholder(
-                    color: Color(0xFF728B25),
-                  ),
-                ),
-                SizedBox(
-                  width: 170,
-                  height: 40,
-                  child: const Placeholder(
-                    color: Color(0xFF728B25),
-                  ),
-                ),
-                SizedBox(
-                  width: 170,
-                  height: 40,
-                  child: const Placeholder(
-                    color: Color(0xFF728B25),
-                  ),
-                ),
-                SizedBox(
-                  width: 170,
-                  height: 40,
-                  child: const Placeholder(
-                    color: Color(0xFF728B25),
-                  ),
-                ),
-              ],
-            ), 
+              const SizedBox(height: 10,),
+              SizedBox(
+                height: 100,
+                child: GridView.count(
+                shrinkWrap: true,
+                crossAxisCount: 2,
+                crossAxisSpacing: 10,
+                mainAxisSpacing: 10,
+                childAspectRatio: 4.2,
+                children: [
+                 SelectableCategory(categoryName: 'Coffee'),
+                 SelectableCategory(categoryName: 'Date'),
+                 SelectableCategory(categoryName: 'Parks'),
+                 SelectableCategory(categoryName: 'Restaurants'),
+                 SelectableCategory(categoryName: 'Views'),
+                SelectableCategory(categoryName: 'Art galleries'),
+                ],
+                            ),
+              ), 
                 const SizedBox(height: 30,),
                 Text('Notes (optional)',
                 style: Theme.of(context).textTheme.titleLarge!.copyWith(
