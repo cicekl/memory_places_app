@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
-const uuid = Uuid();
+const _uuid = Uuid();
 
 class Category {
 
    Category ({
+    String? id,
     required this.title,
     required this.color,
-  }): id = uuid.v4();
+    required this.isDefault,
+  }): id = id ?? _uuid.v4();
 
 final String id;
 final String title;
 final Color color;
+final bool isDefault;
 
 }

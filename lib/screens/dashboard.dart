@@ -22,6 +22,8 @@ const DashboardScreen ({super.key});
 
 class _DashboardScreenState extends State<DashboardScreen> {
 
+  final places = [];
+
   final _authService = AuthService();
 
   void _addPlace() async{
@@ -169,7 +171,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
     ),
     const SizedBox(height: 20,),
    Expanded(
-  child: GridView(
+  child: places.isEmpty
+      ? const Center(
+          child: Text('No places yet.',
+          style: TextStyle(
+            fontSize: 18,
+          ),),
+        )
+      :GridView(
     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
       crossAxisCount: 2,
       childAspectRatio: 0.75,
