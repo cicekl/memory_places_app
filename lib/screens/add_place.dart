@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:memory_places_app/models/category.dart';
 import 'package:memory_places_app/models/place.dart';
 import 'package:memory_places_app/services/auth_service.dart';
+import 'package:memory_places_app/services/category_service.dart';
 import 'package:memory_places_app/services/place_service.dart';
 import 'package:memory_places_app/services/storage_service.dart';
 import 'package:memory_places_app/widgets/image_input.dart';
@@ -37,14 +38,27 @@ class _AddPlaceScreenState extends State<AddPlaceScreen> {
   final _placeService = PlaceService();
   final _authService = AuthService();
   final _storageService = StorageService();
+  final _categoryService = CategoryService();
   double? _latitude;
   double? _longitude;
   String _street = '';
   String _city = '';
   String _postalCode = '';
   String _country = '';
+  List<Category> _categories = [];
+  Category? _selectedCategory;
 
   var _isSaving = false;
+
+  Future<void> _loadCategories() async {
+    final categories = await _categoryService.getDefaultCategories();
+
+    if(!mounted) return;
+
+    setState(() {
+      _categories = categories;
+    });
+  }
 
   Future<void> _savePlace() async {
     final user = _authService.currentUser;
@@ -53,7 +67,7 @@ class _AddPlaceScreenState extends State<AddPlaceScreen> {
 
     if(_placeNameController.text.trim().isEmpty ||
     _locationController.text.trim().isEmpty ||
-    _selectedCategoryName == null ||
+    _selectedCategory == null ||
     _selectedLastVisit == null) {
        ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -94,10 +108,7 @@ class _AddPlaceScreenState extends State<AddPlaceScreen> {
         ), 
       lastVisit: _selectedLastVisit!, 
       userId: user.uid, 
-      category: Category(
-        title: _selectedCategoryName!, 
-        color:const Color(0xFF728B25), 
-        isDefault: true),
+      category: _selectedCategory!,
       totalVisits: 1);
 
     
@@ -133,7 +144,6 @@ class _AddPlaceScreenState extends State<AddPlaceScreen> {
   }
 
   DateTime? _selectedLastVisit;
-  String? _selectedCategoryName;
   final _locationController = TextEditingController();
   final _placeNameController = TextEditingController();
 final _notesController = TextEditingController();
@@ -165,6 +175,7 @@ void _presentLastVisitDatePicker() async {
 @override
   void initState() {
     super.initState();
+    _loadCategories();
     _selectedImage = widget.initialImage;
   }
 
@@ -328,44 +339,17 @@ void _presentLastVisitDatePicker() async {
                 crossAxisSpacing: 10,
                 mainAxisSpacing: 10,
                 childAspectRatio: 4.2,
-                children: [
-                 SelectableCategory(
-                  categoryName: 'Coffee',
-                  isSelected: _selectedCategoryName == 'Coffee',
-                  onTap: () {
-                    setState(() {
-                      _selectedCategoryName = 'Coffee';
-                    });
-                  },
-                ),
-                 SelectableCategory(
-                  categoryName: 'Date',
-                  isSelected: _selectedCategoryName == 'Date',
-                  onTap: () {
-                    setState(() {
-                      _selectedCategoryName = 'Date';
-                    });
-                  },
-                ),
-                SelectableCategory(
-                  categoryName: 'Parks',
-                  isSelected: _selectedCategoryName == 'Parks',
-                  onTap: () {
-                    setState(() {
-                      _selectedCategoryName = 'Parks';
-                    });
-                  },
-                ),
-                SelectableCategory(
-                  categoryName: 'Restaurants',
-                  isSelected: _selectedCategoryName == 'Restaurants',
-                  onTap: () {
-                    setState(() {
-                      _selectedCategoryName = 'Restaurants';
-                    });
-                  },
-                ),
-                ],
+                children: 
+                  _categories.map((category) {
+                    return SelectableCategory(
+                      categoryName: category.title, 
+                      isSelected: _selectedCategory?.id == category.id, 
+                      onTap: () {
+                        setState(() {
+                          _selectedCategory = category;
+                        });
+                      });
+                  }).toList(),
                             ),
               ), 
                 const SizedBox(height: 30,),
