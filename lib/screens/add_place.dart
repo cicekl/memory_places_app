@@ -17,24 +17,18 @@ import 'package:uuid/uuid.dart';
 final formatter = DateFormat.yMd();
 const uuid = Uuid();
 
-class AddPlaceScreen extends StatefulWidget{
+class AddPlaceScreen extends StatefulWidget {
+  const AddPlaceScreen({super.key, this.initialImage});
 
-const AddPlaceScreen ({super.key,
-this.initialImage});
+  final File? initialImage;
 
-final File? initialImage;
-
-
-@override
+  @override
   State<AddPlaceScreen> createState() {
     return _AddPlaceScreenState();
   }
-
-
 }
 
 class _AddPlaceScreenState extends State<AddPlaceScreen> {
-
   final _placeService = PlaceService();
   final _authService = AuthService();
   final _storageService = StorageService();
@@ -51,89 +45,89 @@ class _AddPlaceScreenState extends State<AddPlaceScreen> {
   var _isSaving = false;
 
   Future<void> _loadCategories() async {
-    final categories = await _categoryService.getDefaultCategories();
+    final user = _authService.currentUser;
 
-    if(!mounted) return;
+    if (user == null) return;
+    final defaultCategories = await _categoryService.getDefaultCategories();
+    final customCategories = await _categoryService.getUserCategories(user.uid);
+
+    if (!mounted) return;
 
     setState(() {
-      _categories = categories;
+      _categories = [...defaultCategories, ...customCategories];
     });
   }
 
   Future<void> _savePlace() async {
     final user = _authService.currentUser;
 
-    if(user == null) return;
+    if (user == null) return;
 
-    if(_placeNameController.text.trim().isEmpty ||
-    _locationController.text.trim().isEmpty ||
-    _selectedCategory == null ||
-    _selectedLastVisit == null) {
-       ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Please fill all required fields.'),
-      ),
-    );
-    return;
+    if (_placeNameController.text.trim().isEmpty ||
+        _locationController.text.trim().isEmpty ||
+        _selectedCategory == null ||
+        _selectedLastVisit == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill all required fields.')),
+      );
+      return;
     }
 
-  setState(() {
+    setState(() {
       _isSaving = true;
     });
 
-  final placeId = uuid.v4();
-  String? imageUrl;
+    final placeId = uuid.v4();
+    String? imageUrl;
 
-  if (_selectedImage != null) {
-  imageUrl = await _storageService.uploadPlaceImage(
-    image: _selectedImage!,
-    userId: user.uid,
-    placeId: placeId,
-  );
-}
+    if (_selectedImage != null) {
+      imageUrl = await _storageService.uploadPlaceImage(
+        image: _selectedImage!,
+        userId: user.uid,
+        placeId: placeId,
+      );
+    }
 
     try {
-    final place = Place(
-      id: placeId,
-      title:  _placeNameController.text.trim(), 
-      description: _notesController.text.trim(), 
-      imageUrl: imageUrl,
-      location: PlaceLocation(
-        latitude: _latitude ?? 0, 
-        longitude: _longitude ?? 0, 
-        city: _city, 
-        country: _country, 
-        postalCode: _postalCode, 
-        street: _street.isEmpty ? _locationController.text.trim() : _street,
-        ), 
-      lastVisit: _selectedLastVisit!, 
-      userId: user.uid, 
-      category: _selectedCategory!,
-      totalVisits: 1);
+      final place = Place(
+        id: placeId,
+        title: _placeNameController.text.trim(),
+        description: _notesController.text.trim(),
+        imageUrl: imageUrl,
+        location: PlaceLocation(
+          latitude: _latitude ?? 0,
+          longitude: _longitude ?? 0,
+          city: _city,
+          country: _country,
+          postalCode: _postalCode,
+          street: _street.isEmpty ? _locationController.text.trim() : _street,
+        ),
+        lastVisit: _selectedLastVisit!,
+        userId: user.uid,
+        category: _selectedCategory!,
+        totalVisits: 1,
+      );
 
-    
+      await _placeService.addPlace(place);
 
-    await _placeService.addPlace(place);
+      if (!mounted) return;
 
-     if (!mounted) return;
-
-    Navigator.of(context).pop();
-
-  } catch (error) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Could not save place. Please try again.'),
-      ),
-    );
-  } finally {
-    if(mounted) {
-      setState(() {
-        _isSaving = false;
-      });
+      Navigator.of(context).pop();
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not save place. Please try again.'),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+        });
+      }
     }
   }
-}
 
   @override
   void dispose() {
@@ -146,33 +140,33 @@ class _AddPlaceScreenState extends State<AddPlaceScreen> {
   DateTime? _selectedLastVisit;
   final _locationController = TextEditingController();
   final _placeNameController = TextEditingController();
-final _notesController = TextEditingController();
+  final _notesController = TextEditingController();
 
   void _close() {
     Navigator.of(context).pop();
   }
 
-void _presentLastVisitDatePicker() async {
-  final now = DateTime.now();
-  final firstDate = DateTime(now.year - 10, now.month, now.day);
+  void _presentLastVisitDatePicker() async {
+    final now = DateTime.now();
+    final firstDate = DateTime(now.year - 10, now.month, now.day);
 
-  final pickedDate = await showDatePicker(
-    context: context,
-    initialDate: _selectedLastVisit ?? now,
-    firstDate: firstDate,
-    lastDate: now,
-  );
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: _selectedLastVisit ?? now,
+      firstDate: firstDate,
+      lastDate: now,
+    );
 
-  if (pickedDate == null) {
-    return;
+    if (pickedDate == null) {
+      return;
+    }
+
+    setState(() {
+      _selectedLastVisit = pickedDate;
+    });
   }
 
-  setState(() {
-    _selectedLastVisit = pickedDate;
-  });
-}
-
-@override
+  @override
   void initState() {
     super.initState();
     _loadCategories();
@@ -182,53 +176,53 @@ void _presentLastVisitDatePicker() async {
   File? _selectedImage;
 
   void _setImage(File image) {
-  setState(() {
-    _selectedImage = image;
-  });
+    setState(() {
+      _selectedImage = image;
+    });
   }
 
   Future<void> _pickImage(ImageSource source) async {
-  final imagePicker = ImagePicker();
+    final imagePicker = ImagePicker();
 
-  final pickedImage = await imagePicker.pickImage(
-    source: source,
-    maxHeight: 600,
-  );
+    final pickedImage = await imagePicker.pickImage(
+      source: source,
+      maxHeight: 600,
+    );
 
-  if (pickedImage == null) return;
+    if (pickedImage == null) return;
 
     _setImage(File(pickedImage.path));
   }
 
   void _showImageSourceOptions() {
-  showModalBottomSheet(
-    context: context,
-    builder: (ctx) {
-      return SafeArea(
-        child: Wrap(
-          children: [
-            ListTile(
-              leading: const Icon(Icons.camera_alt_outlined),
-              title: const Text('Take photo'),
-              onTap: () {
-                Navigator.of(ctx).pop();
-                _pickImage(ImageSource.camera);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.photo_library_outlined),
-              title: const Text('Upload photo'),
-              onTap: () {
-                Navigator.of(ctx).pop();
-                _pickImage(ImageSource.gallery);
-              },
-            ),
-          ],
-        ),
-      );
-    },
-  );
-}
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) {
+        return SafeArea(
+          child: Wrap(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.camera_alt_outlined),
+                title: const Text('Take photo'),
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  _pickImage(ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library_outlined),
+                title: const Text('Upload photo'),
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  _pickImage(ImageSource.gallery);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -239,250 +233,265 @@ void _presentLastVisitDatePicker() async {
         automaticallyImplyLeading: false,
         scrolledUnderElevation: 0,
         toolbarHeight: 100,
-        title: Text('Add New Place',
-            style: Theme.of(context).textTheme.titleLarge!.copyWith(
-              fontSize: 32,
-              fontFamily: 'RobotoSlab',
-              fontWeight: FontWeight.w500,),
-              ),
-      actions: [
-        IconButton(
-          onPressed: () {
-            _close();
-        }, 
-        icon: Icon(Icons.close))
-      ],),
+        title: Text(
+          'Add New Place',
+          style: Theme.of(context).textTheme.titleLarge!.copyWith(
+            fontSize: 32,
+            fontFamily: 'RobotoSlab',
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        actions: [
+          IconButton(
+            onPressed: () {
+              _close();
+            },
+            icon: Icon(Icons.close),
+          ),
+        ],
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-             Text('Photo (optional)', 
-              style: Theme.of(context).textTheme.titleLarge!.copyWith(
-              fontFamily: 'RobotoSlab',
-              fontSize: 18,
-            ),),
-            const SizedBox(height: 10,),
-           _selectedImage == null ? Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          ImageInput(
-          label: 'Take photo',
-          icon: Icons.camera_alt_outlined,
-          onTap: () => _pickImage(ImageSource.camera),
-        ),
-          ImageInput(
-          label: 'Upload photo',
-          icon: Icons.camera_alt_outlined,
-          onTap: () => _pickImage(ImageSource.gallery),
-        ),
-        ],
-      )
-    : GestureDetector(
-        onTap: _showImageSourceOptions,
-        child: Container(
-          width: double.infinity,
-          height: 350,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: const Color(0xFF8A9B61),
-              width: 1.5,
-            ),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(18),
-            child: Image.file(
-              _selectedImage!,
-              fit: BoxFit.cover,
-              width: double.infinity,
-              height: double.infinity,
-            ),
+              Text(
+                'Photo (optional)',
+                style: Theme.of(context).textTheme.titleLarge!.copyWith(
+                  fontFamily: 'RobotoSlab',
+                  fontSize: 18,
+                ),
+              ),
+              const SizedBox(height: 10),
+              _selectedImage == null
+                  ? Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        ImageInput(
+                          label: 'Take photo',
+                          icon: Icons.camera_alt_outlined,
+                          onTap: () => _pickImage(ImageSource.camera),
+                        ),
+                        ImageInput(
+                          label: 'Upload photo',
+                          icon: Icons.camera_alt_outlined,
+                          onTap: () => _pickImage(ImageSource.gallery),
+                        ),
+                      ],
+                    )
+                  : GestureDetector(
+                      onTap: _showImageSourceOptions,
+                      child: Container(
+                        width: double.infinity,
+                        height: 350,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: const Color(0xFF8A9B61),
+                            width: 1.5,
+                          ),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(18),
+                          child: Image.file(
+                            _selectedImage!,
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            height: double.infinity,
+                          ),
+                        ),
+                      ),
+                    ),
+              const SizedBox(height: 20),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  InputField(
+                    inputText: 'Place Name *',
+                    hint: 'e.g. Campus Caffe',
+                    controller: _placeNameController,
+                  ),
+                  const SizedBox(height: 30),
+                  LocationInput(
+                    inputText: 'Location *',
+                    hint: 'Add location or use current',
+                    requiredField: true,
+                    controller: _locationController,
+                    onLocationSelected:
+                        ({
+                          required city,
+                          required country,
+                          required latitude,
+                          required longitude,
+                          required postalCode,
+                          required street,
+                        }) {
+                          _latitude = latitude;
+                          _longitude = longitude;
+                          _street = street;
+                          _city = city;
+                          _postalCode = postalCode;
+                          _country = country;
+                        },
+                  ),
+                  const SizedBox(height: 30),
+                  Text(
+                    'Category *',
+                    style: Theme.of(context).textTheme.titleLarge!.copyWith(
+                      fontFamily: 'RobotoSlab',
+                      fontSize: 18,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    height: 100,
+                    child: GridView.count(
+                      shrinkWrap: true,
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 10,
+                      mainAxisSpacing: 10,
+                      childAspectRatio: 4.2,
+                      children: _categories.map((category) {
+                        return SelectableCategory(
+                          categoryName: category.title,
+                          isSelected: _selectedCategory?.id == category.id,
+                          onTap: () {
+                            setState(() {
+                              _selectedCategory = category;
+                            });
+                          },
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                  const SizedBox(height: 30),
+                  Text(
+                    'Notes (optional)',
+                    style: Theme.of(context).textTheme.titleLarge!.copyWith(
+                      fontFamily: 'RobotoSlab',
+                      fontSize: 18,
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  TextFormField(
+                    minLines: 5,
+                    maxLines: null,
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: Colors.white,
+                      hintText: 'Why is the place special to you?',
+                      hintStyle: TextStyle(color: Color(0xFF728B25)),
+                      labelStyle: TextStyle(color: Color(0xFF4A3728)),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide(color: Color(0xFF8A9B61)),
+                      ),
+
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide(
+                          color: Color(0xFF8A9B61),
+                          width: 2,
+                        ),
+                      ),
+                    ),
+                    keyboardType: TextInputType.emailAddress,
+                    autocorrect: false,
+                    textCapitalization: TextCapitalization.none,
+                    controller: _notesController,
+                    onSaved: (newValue) {},
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Last Visit *',
+                    style: Theme.of(context).textTheme.titleLarge!.copyWith(
+                      fontFamily: 'RobotoSlab',
+                      fontSize: 18,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: const Color(0xFF8A9B61)),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            _selectedLastVisit == null
+                                ? 'No date selected'
+                                : formatter.format(_selectedLastVisit!),
+                            style: Theme.of(context).textTheme.bodyLarge!
+                                .copyWith(color: const Color(0xFF4A3728)),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: _presentLastVisitDatePicker,
+                          icon: const Icon(
+                            Icons.calendar_month_outlined,
+                            color: Color(0xFF728B25),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 30),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      SizedBox(
+                        width: 160,
+                        height: 57,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Color(0xFFF5F1E8),
+                            side: BorderSide(color: Color(0xFF8A9B61)),
+                          ),
+                          onPressed: () {},
+                          child: Text(
+                            'Cancel',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(
+                        width: 160,
+                        height: 57,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Color(0xFF8A9B61),
+                          ),
+                          onPressed: _isSaving ? null : _savePlace,
+                          child: Text(
+                            _isSaving ? 'Saving...' : 'Save place',
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: Color(0xFFF5F1E8),
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 15),
+                ],
+              ),
+            ],
           ),
         ),
       ),
-           const SizedBox(height: 20,),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-            InputField(inputText: 'Place Name *', 
-            hint: 'e.g. Campus Caffe', 
-            controller: _placeNameController,),
-            const SizedBox(height: 30,),
-            LocationInput(
-              inputText: 'Location *',
-              hint: 'Add location or use current',
-              requiredField: true,
-              controller: _locationController,
-              onLocationSelected: ({required city, required country, required latitude, required longitude, required postalCode, required street}) {
-                _latitude = latitude;
-                _longitude = longitude;
-                _street = street;
-                _city = city;
-                _postalCode = postalCode;
-                _country = country;
-              },
-            ),
-                const SizedBox(height: 30,),
-                Text('Category *',
-                style: Theme.of(context).textTheme.titleLarge!.copyWith(
-              fontFamily: 'RobotoSlab',
-              fontSize: 18,),
-              ),
-              const SizedBox(height: 10,),
-              SizedBox(
-                height: 100,
-                child: GridView.count(
-                shrinkWrap: true,
-                crossAxisCount: 2,
-                crossAxisSpacing: 10,
-                mainAxisSpacing: 10,
-                childAspectRatio: 4.2,
-                children: 
-                  _categories.map((category) {
-                    return SelectableCategory(
-                      categoryName: category.title, 
-                      isSelected: _selectedCategory?.id == category.id, 
-                      onTap: () {
-                        setState(() {
-                          _selectedCategory = category;
-                        });
-                      });
-                  }).toList(),
-                            ),
-              ), 
-                const SizedBox(height: 30,),
-                Text('Notes (optional)',
-                style: Theme.of(context).textTheme.titleLarge!.copyWith(
-              fontFamily: 'RobotoSlab',
-              fontSize: 18,),
-              ),
-           SizedBox(height: 10),
-                TextFormField(
-                  minLines: 5,
-                  maxLines: null,
-                  decoration:  InputDecoration(
-                    filled: true,
-                    fillColor: Colors.white,
-                    hintText: 'Why is the place special to you?',
-                    hintStyle: TextStyle(
-                      color: Color(0xFF728B25),
-                    ),
-                    labelStyle: TextStyle(
-                      color: Color(0xFF4A3728),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      borderSide: BorderSide(
-                        color: Color(0xFF8A9B61)),
-                    ),
-                
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      borderSide: BorderSide(color: Color(0xFF8A9B61), width: 2),
-                    ),
-                  ),
-                  keyboardType: TextInputType.emailAddress,
-                  autocorrect: false,
-                  textCapitalization: TextCapitalization.none,
-                  controller: _notesController,
-                  onSaved: (newValue) {
-                  },
-                ),
-            const SizedBox(height: 20,),
-        Text(
-          'Last Visit *',
-          style: Theme.of(context).textTheme.titleLarge!.copyWith(
-                fontFamily: 'RobotoSlab',
-                fontSize: 18,
-              ),
-        ),
-        const SizedBox(height: 10),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 8,
-              ),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: const Color(0xFF8A9B61),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      _selectedLastVisit == null
-                          ? 'No date selected'
-                          : formatter.format(_selectedLastVisit!),
-                      style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                            color: const Color(0xFF4A3728),
-                          ),
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: _presentLastVisitDatePicker,
-                    icon: const Icon(
-                      Icons.calendar_month_outlined,
-                      color: Color(0xFF728B25),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 30,),
-             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                SizedBox(
-                  width: 160,
-                  height: 57,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xFFF5F1E8),
-                      side: BorderSide(
-                        color: Color(0xFF8A9B61),
-                      )
-                    ),
-                    onPressed: (){}, 
-                    child: Text('Cancel',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w400,
-                    ),
-                    ),
-                    ),
-                ),
-                SizedBox(
-                  width: 160,
-                  height: 57,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xFF8A9B61),
-                    ),
-                    onPressed: _isSaving ? null : _savePlace, 
-                    child: Text(_isSaving ? 'Saving...' : 'Save place',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Color(0xFFF5F1E8),
-                      fontWeight: FontWeight.w400,
-                    ),
-                    ),
-                ),
-                ),
-              ],
-             ), 
-             const SizedBox(height: 15),      
-            ],
-        ),
-        ], 
-        ),
-      )
-    ),
     );
   }
 }

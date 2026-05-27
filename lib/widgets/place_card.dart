@@ -1,33 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:memory_places_app/models/place.dart';
 
-class PlaceCard extends StatefulWidget{
+final formatter = DateFormat.yMd();
 
-  const PlaceCard ({super.key,
-  required this.onSelectPlace});
+class PlaceCard extends StatelessWidget {
+  const PlaceCard({
+    super.key,
+    required this.onSelectPlace,
+    required this.place,
+  });
 
   final void Function() onSelectPlace;
-
-
-@override
-  State<PlaceCard> createState() {
-   return _PlaceCardState();
-  }
-
-
-}
-
-class _PlaceCardState extends State<PlaceCard> {
-
+  final Place place;
 
   @override
   Widget build(BuildContext context) {
     return Card(
       shape: RoundedRectangleBorder(
-      borderRadius: BorderRadiusGeometry.circular(20)),
+        borderRadius: BorderRadiusGeometry.circular(20),
+      ),
       clipBehavior: Clip.hardEdge,
       child: InkWell(
         onTap: () {
-          widget.onSelectPlace();
+          onSelectPlace();
         },
         child: Column(
           children: [
@@ -36,25 +32,30 @@ class _PlaceCardState extends State<PlaceCard> {
                 topLeft: Radius.circular(20),
                 topRight: Radius.circular(20),
               ),
-              child: Image.network('https://i.pinimg.com/736x/89/be/69/89be69d7de3f535a30266794f19028bc.jpg',
-              height: 140,
-              width: 180,
-              fit: BoxFit.cover,),
+              child: Image.network(
+                place.imageUrl ??
+                    'https://i.pinimg.com/736x/89/be/69/89be69d7de3f535a30266794f19028bc.jpg',
+                height: 140,
+                width: 180,
+                fit: BoxFit.cover,
+              ),
             ),
-            const SizedBox(height: 10,),
-            Text('Campus Caffe',
-            style: Theme.of(context).textTheme.bodySmall!.copyWith(
-              fontSize: 15,
-              fontWeight: FontWeight.bold
+            const SizedBox(height: 10),
+            Text(
+              place.title,
+              style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-            ),
-            const SizedBox(height: 8,),
-            Text('2 days ago',
-            style: Theme.of(context).textTheme.bodySmall!.copyWith(
-              fontSize: 12,
-              fontWeight: FontWeight.w400,
-              color: Color(0xFF846A37),
-            ),
+            const SizedBox(height: 8),
+            Text(
+              formatter.format(place.lastVisit),
+              style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                fontSize: 12,
+                fontWeight: FontWeight.w400,
+                color: Color(0xFF846A37),
+              ),
             ),
           ],
         ),
