@@ -120,4 +120,8 @@ class AuthService {
 
     await user.reload();
   }
+
+  Future<void> resetPassword(String email) async {
+    await _firebase.sendPasswordResetEmail(email: email);
+  }
 }

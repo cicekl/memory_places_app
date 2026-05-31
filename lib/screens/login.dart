@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:memory_places_app/screens/forgot_password.dart';
 import 'package:memory_places_app/screens/register.dart';
 import 'package:memory_places_app/screens/tabs.dart';
 import 'package:memory_places_app/services/auth_service.dart';
@@ -167,13 +168,22 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(height: 30),
                         Align(
                           alignment: AlignmentGeometry.bottomEnd,
-                          child: Text(
-                            'Forgot password?',
-                            style: Theme.of(context).textTheme.bodySmall!
-                                .copyWith(
-                                  fontSize: 15,
-                                  color: Color(0xFF728B25),
+                          child: TextButton(
+                            onPressed: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => const ForgotPasswordScreen(),
                                 ),
+                              );
+                            },
+                            child: Text(
+                              'Forgot password?',
+                              style: Theme.of(context).textTheme.bodySmall!
+                                  .copyWith(
+                                    fontSize: 15,
+                                    color: Color(0xFF728B25),
+                                  ),
+                            ),
                           ),
                         ),
                         const SizedBox(height: 30),
