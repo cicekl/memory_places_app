@@ -3,7 +3,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:memory_places_app/models/category.dart';
 import 'package:memory_places_app/models/place.dart';
+import 'package:memory_places_app/services/category_service.dart';
 import 'package:memory_places_app/services/place_service.dart';
 import 'package:memory_places_app/services/storage_service.dart';
 import 'package:memory_places_app/widgets/input_field.dart';
@@ -31,13 +33,37 @@ class _EditPlaceDetailsScreenState extends State<EditPlaceDetailsScreen> {
 
   DateTime? _selectedLastVisit;
   File? _selectedImage;
-
+  Category? _selectedCategory;
+  List<Category> _categories = [];
   double? _latitude;
   double? _longitude;
   String _street = '';
   String _city = '';
   String _postalCode = '';
   String _country = '';
+
+  final _categoryService = CategoryService();
+
+  Future<void> _loadCategories() async {
+    final defaultCategories = await _categoryService.getDefaultCategories();
+
+    final userCategories = await _categoryService.getUserCategories(
+      widget.place.userId,
+    );
+
+    final categories = [...defaultCategories, ...userCategories];
+
+    if (!mounted) return;
+
+    setState(() {
+      _categories = categories;
+
+      _selectedCategory = categories.firstWhere(
+        (category) => category.id == widget.place.category.id,
+        orElse: () => categories.first,
+      );
+    });
+  }
 
   Future<void> _saveChanges() async {
     setState(() {
@@ -69,8 +95,9 @@ class _EditPlaceDetailsScreenState extends State<EditPlaceDetailsScreen> {
       ),
       lastVisit: _selectedLastVisit ?? widget.place.lastVisit,
       userId: widget.place.userId,
-      category: widget.place.category,
+      category: _selectedCategory!,
       totalVisits: widget.place.totalVisits,
+      reminderSent: widget.place.reminderSent,
     );
 
     try {
@@ -99,6 +126,7 @@ class _EditPlaceDetailsScreenState extends State<EditPlaceDetailsScreen> {
   @override
   void initState() {
     super.initState();
+    _loadCategories();
 
     _titleController.text = widget.place.title;
     _locationController.text = widget.place.location.street;
@@ -283,6 +311,43 @@ class _EditPlaceDetailsScreenState extends State<EditPlaceDetailsScreen> {
                       _postalCode = postalCode;
                       _country = country;
                     },
+              ),
+              const SizedBox(height: 30),
+
+              Text(
+                'Category *',
+                style: Theme.of(context).textTheme.titleLarge!.copyWith(
+                  fontFamily: 'RobotoSlab',
+                  fontSize: 18,
+                ),
+              ),
+
+              const SizedBox(height: 10),
+
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: const Color(0xFF8A9B61)),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<Category>(
+                    value: _selectedCategory,
+                    isExpanded: true,
+                    items: _categories.map((category) {
+                      return DropdownMenuItem(
+                        value: category,
+                        child: Text(category.title),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedCategory = value;
+                      });
+                    },
+                  ),
+                ),
               ),
               const SizedBox(height: 30),
               Text(

@@ -136,6 +136,12 @@ class PlaceService {
             'postalCode': place.location.postalCode,
             'country': place.location.country,
           },
+          'category': {
+            'id': place.category.id,
+            'title': place.category.title,
+            'color': place.category.color.toARGB32(),
+            'isDefault': place.category.isDefault,
+          },
           'lastVisit': Timestamp.fromDate(place.lastVisit),
           'reminderSent': place.reminderSent,
         });
