@@ -42,6 +42,7 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
         userId: _place.userId,
         category: _place.category,
         totalVisits: _place.totalVisits + 1,
+        reminderSent: false,
       );
     });
   }
@@ -139,7 +140,6 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
                   const SizedBox(height: 10),
                   Container(
                     width: 365,
-                    height: 70,
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(20),
@@ -161,25 +161,27 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
                             ),
                           ),
                           const SizedBox(width: 15),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                _place.location.street,
-                                style: Theme.of(
-                                  context,
-                                ).textTheme.titleMedium!.copyWith(),
-                              ),
-                              Text(
-                                '${_place.location.postalCode} ${_place.location.city}',
-                                style: Theme.of(context).textTheme.titleSmall!
-                                    .copyWith(
-                                      fontWeight: FontWeight.w400,
-                                      color: Color(0xFF728B25),
-                                    ),
-                              ),
-                            ],
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  _place.location.street,
+                                  style: Theme.of(
+                                    context,
+                                  ).textTheme.titleMedium!.copyWith(),
+                                ),
+                                Text(
+                                  '${_place.location.postalCode} ${_place.location.city}',
+                                  style: Theme.of(context).textTheme.titleSmall!
+                                      .copyWith(
+                                        fontWeight: FontWeight.w400,
+                                        color: Color(0xFF728B25),
+                                      ),
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ),

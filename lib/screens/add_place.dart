@@ -5,6 +5,7 @@ import 'package:memory_places_app/models/category.dart';
 import 'package:memory_places_app/models/place.dart';
 import 'package:memory_places_app/services/auth_service.dart';
 import 'package:memory_places_app/services/category_service.dart';
+import 'package:memory_places_app/services/notification_service.dart';
 import 'package:memory_places_app/services/place_service.dart';
 import 'package:memory_places_app/services/storage_service.dart';
 import 'package:memory_places_app/widgets/image_input.dart';
@@ -109,6 +110,15 @@ class _AddPlaceScreenState extends State<AddPlaceScreen> {
       );
 
       await _placeService.addPlace(place);
+
+      try {
+        await NotificationService().createPlaceAddedNotification(
+          userId: user.uid,
+          placeName: _placeNameController.text.trim(),
+        );
+      } catch (error) {
+        debugPrint('Notification error: $error');
+      }
 
       if (!mounted) return;
 

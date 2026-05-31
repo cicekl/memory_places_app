@@ -47,6 +47,7 @@ class PlaceCard extends StatelessWidget {
                 fontSize: 15,
                 fontWeight: FontWeight.bold,
               ),
+              textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             Text(

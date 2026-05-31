@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:memory_places_app/models/place.dart';
 import 'package:memory_places_app/screens/add_place.dart';
-import 'package:memory_places_app/screens/login.dart';
 import 'package:memory_places_app/screens/place_details.dart';
 import 'package:memory_places_app/screens/statistics.dart';
 import 'package:memory_places_app/services/auth_service.dart';
+import 'package:memory_places_app/services/notification_service.dart';
 import 'package:memory_places_app/services/place_service.dart';
 import 'package:memory_places_app/widgets/category_chip.dart';
+import 'package:memory_places_app/widgets/notification_card.dart';
 import 'package:memory_places_app/widgets/place_card.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -21,6 +22,28 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   final _authService = AuthService();
   final _placeService = PlaceService();
+
+  String _formatNotificationTime(DateTime date) {
+    final difference = DateTime.now().difference(date);
+
+    if (difference.inMinutes < 1) {
+      return 'Just now';
+    }
+
+    if (difference.inMinutes < 60) {
+      return '${difference.inMinutes} min ago';
+    }
+
+    if (difference.inHours < 24) {
+      return '${difference.inHours} h ago';
+    }
+
+    if (difference.inDays == 1) {
+      return 'Yesterday';
+    }
+
+    return '${difference.inDays} days ago';
+  }
 
   String _searchQuery = '';
   String _selectedCategory = 'All';
@@ -45,6 +68,107 @@ class _DashboardScreenState extends State<DashboardScreen> {
     setState(() {});
   }
 
+  void _openNotifications() async {
+    final user = _authService.currentUser;
+
+    if (user == null) return;
+
+    await NotificationService().markAllAsRead(user.uid);
+
+    if (!mounted) return;
+
+    setState(() {});
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: 0.55,
+          minChildSize: 0.35,
+          builder: (context, scrollController) {
+            return Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(25),
+                ),
+              ),
+              child: Column(
+                children: [
+                  const SizedBox(height: 12),
+
+                  // drag handle
+                  Container(
+                    width: 50,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  Text(
+                    'Notifications',
+                    style: Theme.of(context).textTheme.titleLarge!.copyWith(
+                      fontFamily: 'RobotoSlab',
+                      fontSize: 24,
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  Expanded(
+                    child: FutureBuilder(
+                      future: NotificationService().getNotifications(user.uid),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
+                        }
+
+                        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                          return const Center(
+                            child: Text('No notifications yet.'),
+                          );
+                        }
+
+                        final notifications = snapshot.data!;
+
+                        return ListView.builder(
+                          controller: scrollController,
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          itemCount: notifications.length,
+                          itemBuilder: (context, index) {
+                            final notification = notifications[index];
+
+                            return NotificationCard(
+                              title: notification.title,
+                              description: notification.description,
+                              time: _formatNotificationTime(
+                                notification.createdAt,
+                              ),
+                              type: notification.type,
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = _authService.currentUser;
@@ -54,18 +178,38 @@ class _DashboardScreenState extends State<DashboardScreen> {
         backgroundColor: Theme.of(context).colorScheme.surface,
         scrolledUnderElevation: 0,
         actions: [
-          IconButton(
-            onPressed: () {
-              _authService.logout();
+          if (user != null)
+            StreamBuilder<int>(
+              stream: NotificationService().getUnreadNotificationsCount(
+                user.uid,
+              ),
+              builder: (context, snapshot) {
+                final unreadCount = snapshot.data ?? 0;
 
-              if (!context.mounted) return;
-
-              Navigator.of(context).pushReplacement(
-                MaterialPageRoute(builder: (context) => const LoginScreen()),
-              );
-            },
-            icon: Icon(Icons.exit_to_app, color: Color(0xFF728B25)),
-          ),
+                return IconButton(
+                  onPressed: _openNotifications,
+                  icon: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      const Icon(Icons.notifications, color: Color(0xFF728B25)),
+                      if (unreadCount > 0)
+                        Positioned(
+                          right: -1,
+                          top: -1,
+                          child: Container(
+                            width: 10,
+                            height: 10,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFC96A4A),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                );
+              },
+            ),
         ],
         automaticallyImplyLeading: false,
         toolbarHeight: 100,
@@ -203,6 +347,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         }
 
                         final places = snapshot.data!;
+
+                        NotificationService().checkVisitReminders(
+                          userId: user.uid,
+                          places: places,
+                        );
                         final categories = places
                             .map((place) => place.category.title)
                             .toSet()

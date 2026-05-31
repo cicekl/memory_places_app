@@ -43,6 +43,7 @@ class PlaceService {
           'totalVisits': place.totalVisits,
           'lastVisit': Timestamp.fromDate(place.lastVisit),
           'createdAt': Timestamp.now(),
+          'reminderSent': place.reminderSent,
         });
   }
 
@@ -81,6 +82,7 @@ class PlaceService {
         ),
         totalVisits: data['totalVisits'],
         lastVisit: (data['lastVisit'] as Timestamp).toDate(),
+        reminderSent: data['reminderSent'] ?? false,
       );
     }).toList();
   }
@@ -97,6 +99,7 @@ class PlaceService {
         .update({
           'totalVisits': FieldValue.increment(1),
           'lastVisit': Timestamp.now(),
+          'reminderSent': false,
         });
   }
 
@@ -134,6 +137,7 @@ class PlaceService {
             'country': place.location.country,
           },
           'lastVisit': Timestamp.fromDate(place.lastVisit),
+          'reminderSent': place.reminderSent,
         });
   }
 

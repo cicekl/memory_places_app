@@ -44,6 +44,7 @@ dependencies:
   location: ^8.0.1
   geocoding: ^4.0.0
   firebase_storage: ^13.4.0
+  flutter_local_notifications: ^21.0.0
 
 dev_dependencies:
   flutter_test:
