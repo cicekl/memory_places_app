@@ -1,24 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:memory_places_app/models/category.dart';
-import 'package:memory_places_app/services/auth_service.dart';
-import 'package:memory_places_app/services/category_service.dart';
-import 'package:memory_places_app/widgets/category_color.dart';
-import 'package:memory_places_app/widgets/input_field.dart';
+import 'package:memory_places_app/viewmodels/auth_viewmodel.dart';
+import 'package:memory_places_app/viewmodels/category_viewmodel.dart';
+import 'package:memory_places_app/views/widgets/category_color.dart';
+import 'package:memory_places_app/views/widgets/input_field.dart';
 
-class NewCategoryScreen extends StatefulWidget {
+class NewCategoryScreen extends ConsumerStatefulWidget {
   const NewCategoryScreen({super.key});
 
   @override
-  State<NewCategoryScreen> createState() => _NewCategoryScreenState();
+  ConsumerState<NewCategoryScreen> createState() => _NewCategoryScreenState();
 }
 
-class _NewCategoryScreenState extends State<NewCategoryScreen> {
+class _NewCategoryScreenState extends ConsumerState<NewCategoryScreen> {
   final _categoryNameController = TextEditingController();
-  final _categoryService = CategoryService();
-  final _authService = AuthService();
 
   Color _selectedColor = const Color(0xFF718a2f);
-  var _isSaving = false;
 
   void _close() {
     Navigator.of(context).pop();
@@ -34,9 +32,10 @@ class _NewCategoryScreenState extends State<NewCategoryScreen> {
   }
 
   Future<void> _saveCategory() async {
-    final user = _authService.currentUser;
+    final authViewModel = ref.read(authViewModelProvider);
+    final categoryViewModel = ref.read(categoryViewModelProvider);
 
-    if (user == null) return;
+    final userId = authViewModel.userId;
 
     if (_categoryNameController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -45,36 +44,24 @@ class _NewCategoryScreenState extends State<NewCategoryScreen> {
       return;
     }
 
-    setState(() {
-      _isSaving = true;
-    });
-
     final category = Category(
       title: _categoryNameController.text.trim(),
       color: _selectedColor,
       isDefault: false,
     );
 
-    try {
-      await _categoryService.addUserCategory(
-        userId: user.uid,
-        category: category,
-      );
+    await categoryViewModel.addCategory(userId!, category);
 
-      if (!mounted) return;
-      Navigator.of(context).pop(true);
-    } catch (error) {
-      if (!mounted) return;
+    if (!mounted) return;
+
+    if (categoryViewModel.error != null) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Could not save category.')));
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isSaving = false;
-        });
-      }
+      return;
     }
+
+    Navigator.of(context).pop(true);
   }
 
   @override
@@ -85,6 +72,8 @@ class _NewCategoryScreenState extends State<NewCategoryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final categoryViewModel = ref.watch(categoryViewModelProvider);
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.surface,
@@ -251,9 +240,9 @@ class _NewCategoryScreenState extends State<NewCategoryScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Color(0xFF8A9B61),
                     ),
-                    onPressed: _isSaving ? null : _saveCategory,
+                    onPressed: categoryViewModel.loading ? null : _saveCategory,
                     child: Text(
-                      'Save category',
+                      categoryViewModel.loading ? 'Saving...' : 'Save category',
                       style: TextStyle(
                         fontSize: 18,
                         color: Color(0xFFF5F1E8),

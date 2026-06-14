@@ -1,25 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:memory_places_app/screens/edit_profile.dart';
-import 'package:memory_places_app/screens/help.dart';
-import 'package:memory_places_app/screens/login.dart';
-import 'package:memory_places_app/screens/manage_categories.dart';
-import 'package:memory_places_app/screens/notifications.dart';
-import 'package:memory_places_app/services/auth_service.dart';
-import 'package:memory_places_app/widgets/settings_option.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:memory_places_app/providers/auth_provider.dart';
+import 'package:memory_places_app/viewmodels/auth_viewmodel.dart';
+import 'package:memory_places_app/views/screens/settings/edit_profile.dart';
+import 'package:memory_places_app/views/screens/settings/help.dart';
+import 'package:memory_places_app/views/screens/login.dart';
+import 'package:memory_places_app/views/screens/settings/manage_categories.dart';
+import 'package:memory_places_app/views/screens/settings/notifications.dart';
+import 'package:memory_places_app/views/widgets/settings_option.dart';
 
-class SettingsScreen extends StatefulWidget {
+class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
   @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
-}
-
-class _SettingsScreenState extends State<SettingsScreen> {
-  final _authService = AuthService();
-
-  @override
-  Widget build(BuildContext context) {
-    final user = _authService.currentUser;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authViewModel = ref.watch(authViewModelProvider);
+    final user = ref.watch(authProvider);
 
     final fullName = user?.displayName ?? 'User';
     final email = user?.email ?? 'No email';
@@ -30,32 +26,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         .take(2)
         .map((part) => part[0].toUpperCase())
         .join();
-
-    void openEditProfile() async {
-      await Navigator.of(context).push(
-        MaterialPageRoute(builder: (context) => const EditProfileScreen()),
-      );
-
-      setState(() {});
-    }
-
-    void openManageCategories() {
-      Navigator.of(context).push(
-        MaterialPageRoute(builder: (context) => const ManageCategoriesScreen()),
-      );
-    }
-
-    void openNotifications() {
-      Navigator.of(context).push(
-        MaterialPageRoute(builder: (context) => const NotificationsScreen()),
-      );
-    }
-
-    void openHelp() {
-      Navigator.of(
-        context,
-      ).push(MaterialPageRoute(builder: (context) => const HelpScreen()));
-    }
 
     return Scaffold(
       appBar: AppBar(
@@ -79,7 +49,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 fontFamily: 'RobotoSlab',
                 fontSize: 20,
                 fontWeight: FontWeight.w400,
-                color: Color(0xFF728B25),
+                color: const Color(0xFF728B25),
               ),
             ),
           ],
@@ -100,13 +70,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: Row(
                   children: [
                     CircleAvatar(
-                      backgroundColor: Color(0xFF728B25),
+                      backgroundColor: const Color(0xFF728B25),
                       radius: 40,
                       child: Text(
                         initials,
                         style: Theme.of(context).textTheme.titleLarge!.copyWith(
                           fontSize: 30,
-                          color: Color(0xFFF5F1E8),
+                          color: const Color(0xFFF5F1E8),
                         ),
                       ),
                     ),
@@ -117,16 +87,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       children: [
                         Text(
                           fullName,
-                          style: Theme.of(
-                            context,
-                          ).textTheme.titleMedium!.copyWith(),
+                          style: Theme.of(context).textTheme.titleMedium,
                         ),
                         Text(
                           email,
                           style: Theme.of(context).textTheme.titleSmall!
                               .copyWith(
                                 fontWeight: FontWeight.w400,
-                                color: Color(0xFF728B25),
+                                color: const Color(0xFF728B25),
                               ),
                         ),
                       ],
@@ -141,67 +109,82 @@ class _SettingsScreenState extends State<SettingsScreen> {
             option: 'Edit profile',
             description: 'Edit your information',
             icon: Icons.person_outline,
-            color: Color(0xFF728B25),
-            onPress: openEditProfile,
+            color: const Color(0xFF728B25),
+            onPress: () async {
+              await Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const EditProfileScreen(),
+                ),
+              );
+            },
           ),
           const SizedBox(height: 10),
           SettingsOption(
             option: 'Categories',
             description: 'Manage place types',
             icon: Icons.star_outline_outlined,
-            color: Color(0xFFF19E39),
-            onPress: openManageCategories,
+            color: const Color(0xFFF19E39),
+            onPress: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const ManageCategoriesScreen(),
+              ),
+            ),
           ),
           const SizedBox(height: 10),
           SettingsOption(
             option: 'Notifications',
             description: 'Manage notifications',
             icon: Icons.notifications_outlined,
-            color: Color(0xFF728B25),
-            onPress: openNotifications,
+            color: const Color(0xFF728B25),
+            onPress: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const NotificationsScreen(),
+              ),
+            ),
           ),
           const SizedBox(height: 10),
           SettingsOption(
             option: 'Help',
             description: 'Learn how to use the app',
             icon: Icons.help_outline,
-            color: Color(0xFFF19E39),
-            onPress: openHelp,
+            color: const Color(0xFFF19E39),
+            onPress: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (context) => const HelpScreen())),
           ),
           const SizedBox(height: 50),
           SizedBox(
             width: 368,
             height: 57,
             child: ElevatedButton(
-              onPressed: () {
-                _authService.logout();
+              onPressed: () async {
+                await authViewModel.logout();
                 if (!context.mounted) return;
-
                 Navigator.of(context).pushReplacement(
                   MaterialPageRoute(builder: (context) => const LoginScreen()),
                 );
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.white,
-                foregroundColor: Color(0xff4A3728),
+                foregroundColor: const Color(0xff4A3728),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
                 ),
-                side: BorderSide(color: Color(0xFF728B25)),
+                side: const BorderSide(color: Color(0xFF728B25)),
               ),
-              child: Row(
+              child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(Icons.logout_sharp, color: Color(0xff4A3728), size: 25),
-                  const SizedBox(width: 10),
+                  SizedBox(width: 10),
                   Text('Log out', style: TextStyle(fontSize: 16)),
                 ],
               ),
             ),
           ),
           const Spacer(),
-          Padding(
-            padding: const EdgeInsets.only(bottom: 10),
+          const Padding(
+            padding: EdgeInsets.only(bottom: 10),
             child: Text(
               "Memory Places v1.0.0",
               textAlign: TextAlign.center,

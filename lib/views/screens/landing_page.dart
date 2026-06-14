@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:memory_places_app/screens/login.dart';
-import 'package:memory_places_app/widgets/feature_card.dart';
-import 'package:memory_places_app/widgets/primary_button.dart';
+import 'package:memory_places_app/views/screens/login.dart';
+import 'package:memory_places_app/views/widgets/feature_card.dart';
+import 'package:memory_places_app/views/widgets/primary_button.dart';
 
 class LandingPageScreen extends StatelessWidget {
   const LandingPageScreen({super.key});

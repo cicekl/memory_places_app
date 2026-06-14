@@ -1,46 +1,39 @@
 import 'package:flutter/material.dart';
-import 'package:memory_places_app/services/auth_service.dart';
-import 'package:memory_places_app/services/notification_settings_service.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:memory_places_app/viewmodels/auth_viewmodel.dart';
+import 'package:memory_places_app/viewmodels/notification_viewmodel.dart';
 
-class NotificationsScreen extends StatefulWidget {
+class NotificationsScreen extends ConsumerStatefulWidget {
   const NotificationsScreen({super.key});
 
   @override
-  State<NotificationsScreen> createState() => _NotificationsScreenState();
+  ConsumerState<NotificationsScreen> createState() =>
+      _NotificationsScreenState();
 }
 
-class _NotificationsScreenState extends State<NotificationsScreen> {
-  final _authService = AuthService();
-  final _settingsService = NotificationSettingsService();
-
-  bool _newPlacesAdded = true;
-  bool _visitReminders = true;
-  bool _isLoading = true;
-
+class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   @override
   void initState() {
     super.initState();
-    _loadSettings();
-  }
 
-  Future<void> _loadSettings() async {
-    final user = _authService.currentUser;
+    Future(() {
+      final authViewModel = ref.read(authViewModelProvider);
+      final notificationViewModel = ref.read(notificationViewModelProvider);
 
-    if (user == null) return;
+      final userId = authViewModel.userId;
 
-    final settings = await _settingsService.getSettings(user.uid);
-
-    if (!mounted) return;
-
-    setState(() {
-      _newPlacesAdded = settings['newPlacesAdded']!;
-      _visitReminders = settings['visitReminders']!;
-      _isLoading = false;
+      if (userId != null) {
+        notificationViewModel.fetchNotifications(userId);
+      }
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    final notificationViewModel = ref.watch(notificationViewModelProvider);
+    final authViewModel = ref.watch(authViewModelProvider);
+    final userId = authViewModel.userId;
+    final settings = notificationViewModel.settings;
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.surface,
@@ -72,7 +65,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           ],
         ),
       ),
-      body: _isLoading
+      body: notificationViewModel.loading
           ? const Center(child: CircularProgressIndicator())
           : Padding(
               padding: const EdgeInsets.all(16),
@@ -103,20 +96,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                 color: Color(0xFF728B25),
                               ),
                         ),
-                        value: _newPlacesAdded,
-                        onChanged: (value) async {
-                          setState(() {
-                            _newPlacesAdded = value;
-                          });
-
-                          final user = _authService.currentUser;
-                          if (user == null) return;
-
-                          await _settingsService.updateNewPlacesAdded(
-                            userId: user.uid,
-                            value: value,
-                          );
-                        },
+                        value: settings['newPlacesAdded'] ?? true,
+                        onChanged: userId == null
+                            ? null
+                            : (value) async {
+                                await ref
+                                    .read(notificationViewModelProvider)
+                                    .updateNewPlacesAdded(userId, value);
+                              },
                         activeTrackColor: Color(0xFF728B25),
                         inactiveTrackColor: Color(0xffAEB3A1),
                         inactiveThumbColor: Color(0xffE6E7DA),
@@ -149,20 +136,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                 color: Color(0xFF728B25),
                               ),
                         ),
-                        value: _visitReminders,
-                        onChanged: (value) async {
-                          setState(() {
-                            _visitReminders = value;
-                          });
-
-                          final user = _authService.currentUser;
-                          if (user == null) return;
-
-                          await _settingsService.updateVisitReminders(
-                            userId: user.uid,
-                            value: value,
-                          );
-                        },
+                        value: settings['visitReminders'] ?? true,
+                        onChanged: userId == null
+                            ? null
+                            : (value) async {
+                                await ref
+                                    .read(notificationViewModelProvider)
+                                    .updateVisitReminders(userId, value);
+                              },
                         activeTrackColor: Color(0xFF728B25),
                         inactiveTrackColor: Color(0xffAEB3A1),
                         inactiveThumbColor: Color(0xffE6E7DA),

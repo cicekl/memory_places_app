@@ -1,40 +1,36 @@
 import 'package:flutter/material.dart';
-import 'package:memory_places_app/services/auth_service.dart';
-import 'package:memory_places_app/widgets/input_field.dart';
-import 'package:memory_places_app/widgets/primary_button.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:memory_places_app/providers/auth_provider.dart';
+import 'package:memory_places_app/viewmodels/auth_viewmodel.dart';
+import 'package:memory_places_app/views/widgets/input_field.dart';
+import 'package:memory_places_app/views/widgets/primary_button.dart';
 
-class EditProfileScreen extends StatefulWidget {
+class EditProfileScreen extends ConsumerStatefulWidget {
   const EditProfileScreen({super.key});
 
   @override
-  State<EditProfileScreen> createState() {
+  ConsumerState<EditProfileScreen> createState() {
     return _EditProfileScreenState();
   }
 }
 
-class _EditProfileScreenState extends State<EditProfileScreen> {
-  final _authService = AuthService();
-
+class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _currentPasswordController = TextEditingController();
   final _newPasswordController = TextEditingController();
 
-  var _isSaving = false;
-
   @override
   void initState() {
     super.initState();
-
-    final user = _authService.currentUser;
-
+    final user = ref.read(authProvider);
     _nameController.text = user?.displayName ?? '';
     _emailController.text = user?.email ?? '';
   }
 
   Future<void> _saveChanges() async {
-    final user = _authService.currentUser;
-
+    final authViewModel = ref.read(authViewModelProvider);
+    final user = ref.read(authProvider);
     if (user == null) return;
 
     final newName = _nameController.text.trim();
@@ -73,38 +69,27 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       return;
     }
 
-    setState(() {
-      _isSaving = true;
-    });
+    await authViewModel.updateProfile(
+      fullName: nameChanged ? newName : null,
+      email: emailChanged ? newEmail : null,
+      currentPassword: currentPassword,
+      newPassword: passwordChanged ? newPassword : null,
+    );
 
-    try {
-      await _authService.updateProfile(
-        fullName: nameChanged ? newName : null,
-        email: emailChanged ? newEmail : null,
-        currentPassword: currentPassword,
-        newPassword: passwordChanged ? newPassword : null,
-      );
+    if (!mounted) return;
 
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profile updated successfully.')),
-      );
-
-      Navigator.of(context).pop();
-    } catch (error) {
-      if (!mounted) return;
-
+    if (authViewModel.error != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Could not update profile.')),
       );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isSaving = false;
-        });
-      }
+      return;
     }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Profile updated successfully.')),
+    );
+
+    Navigator.of(context).pop();
   }
 
   @override
@@ -118,6 +103,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final authViewModel = ref.watch(authViewModelProvider);
+
     return Scaffold(
       appBar: AppBar(
         toolbarHeight: 130,
@@ -180,8 +167,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               ),
               const SizedBox(height: 50),
               PrimaryButton(
-                btnText: _isSaving ? 'Saving...' : 'Save changes',
-                onPress: _isSaving ? null : _saveChanges,
+                btnText: authViewModel.loading ? 'Saving...' : 'Save changes',
+                onPress: authViewModel.loading ? null : _saveChanges,
               ),
             ],
           ),

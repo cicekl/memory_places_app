@@ -1,27 +1,26 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:memory_places_app/screens/login.dart';
-import 'package:memory_places_app/screens/tabs.dart';
-import 'package:memory_places_app/services/auth_service.dart';
-import 'package:memory_places_app/widgets/primary_button.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:memory_places_app/viewmodels/auth_viewmodel.dart';
+import 'package:memory_places_app/views/screens/login.dart';
+import 'package:memory_places_app/views/screens/tabs.dart';
+import 'package:memory_places_app/views/widgets/primary_button.dart';
 
-class RegisterScreen extends StatefulWidget {
+class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
 
   @override
-  State<RegisterScreen> createState() {
+  ConsumerState<RegisterScreen> createState() {
     return _RegisterScreenState();
   }
 }
 
-class _RegisterScreenState extends State<RegisterScreen> {
+class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   void _changeAuthScreen() {
     Navigator.of(
       context,
     ).pushReplacement(MaterialPageRoute(builder: (context) => LoginScreen()));
   }
 
-  final _authService = AuthService();
   final _formKey = GlobalKey<FormState>();
   var _enteredEmail = '';
   var _enteredPassword = '';
@@ -35,9 +34,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
     _formKey.currentState!.save();
+    final authViewModel = ref.read(authViewModelProvider);
 
     try {
-      await _authService.signUp(
+      await authViewModel.signUp(
         email: _enteredEmail,
         password: _enteredPassword,
         fullName: _enteredName,
@@ -51,13 +51,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     } catch (error) {
       ScaffoldMessenger.of(context).clearSnackBars();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            error is FirebaseAuthException
-                ? error.message ?? 'Authetication failed'
-                : 'Something went wrong',
-          ),
-        ),
+        SnackBar(content: Text(authViewModel.error ?? 'Something went wrong')),
       );
     }
   }
@@ -70,6 +64,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final authViewModel = ref.watch(authViewModelProvider);
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       body: Center(
@@ -242,8 +237,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                         const SizedBox(height: 30),
                         PrimaryButton(
-                          btnText: 'Create Account',
-                          onPress: _submit,
+                          btnText: authViewModel.loading
+                              ? 'Creating...'
+                              : 'Create Account',
+                          onPress: authViewModel.loading ? () {} : _submit,
                         ),
                         const SizedBox(height: 40),
                         Row(

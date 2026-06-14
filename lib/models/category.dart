@@ -4,17 +4,23 @@ import 'package:uuid/uuid.dart';
 const _uuid = Uuid();
 
 class Category {
-
-   Category ({
+  Category({
     String? id,
     required this.title,
     required this.color,
     required this.isDefault,
-  }): id = id ?? _uuid.v4();
+  }) : id = id ?? _uuid.v4();
 
-final String id;
-final String title;
-final Color color;
-final bool isDefault;
+  final String id;
+  final String title;
+  final Color color;
+  final bool isDefault;
 
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is Category && runtimeType == other.runtimeType && id == other.id;
+
+  @override
+  int get hashCode => id.hashCode;
 }

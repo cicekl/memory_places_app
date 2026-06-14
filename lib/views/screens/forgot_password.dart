@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:memory_places_app/services/auth_service.dart';
-import 'package:memory_places_app/widgets/input_field.dart';
-import 'package:memory_places_app/widgets/primary_button.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:memory_places_app/viewmodels/auth_viewmodel.dart';
+import 'package:memory_places_app/views/widgets/input_field.dart';
+import 'package:memory_places_app/views/widgets/primary_button.dart';
 
-class ForgotPasswordScreen extends StatefulWidget {
+class ForgotPasswordScreen extends ConsumerStatefulWidget {
   const ForgotPasswordScreen({super.key});
 
   @override
-  State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
+  ConsumerState<ForgotPasswordScreen> createState() =>
+      _ForgotPasswordScreenState();
 }
 
-class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
+class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
   final _emailController = TextEditingController();
-  final _authService = AuthService();
 
   @override
   void dispose() {
@@ -20,15 +21,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     super.dispose();
   }
 
-  bool _isLoading = false;
-
   Future<void> _resetPassword() async {
-    try {
-      setState(() {
-        _isLoading = true;
-      });
+    final authViewModel = ref.read(authViewModelProvider);
 
-      await _authService.resetPassword(_emailController.text.trim());
+    try {
+      await authViewModel.resetPassword(_emailController.text.trim());
 
       if (!mounted) return;
 
@@ -40,20 +37,18 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     } catch (error) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(error.toString())));
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      ScaffoldMessenger.of(context).clearSnackBars();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(authViewModel.error ?? 'Could not send reset email.'),
+        ),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final authViewModel = ref.watch(authViewModelProvider);
     return Scaffold(
       appBar: AppBar(title: const Text('Forgot Password')),
       body: Padding(
@@ -79,8 +74,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             const SizedBox(height: 30),
 
             PrimaryButton(
-              btnText: 'Send Reset Link',
-              onPress: _isLoading ? () {} : _resetPassword,
+              btnText: authViewModel.loading ? 'Sending...' : 'Send Reset Link',
+              onPress: authViewModel.loading ? () {} : _resetPassword,
             ),
           ],
         ),

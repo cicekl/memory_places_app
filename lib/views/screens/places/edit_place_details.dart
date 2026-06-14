@@ -1,40 +1,38 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:memory_places_app/models/category.dart';
 import 'package:memory_places_app/models/place.dart';
-import 'package:memory_places_app/services/category_service.dart';
-import 'package:memory_places_app/services/place_service.dart';
-import 'package:memory_places_app/services/storage_service.dart';
-import 'package:memory_places_app/widgets/input_field.dart';
-import 'package:memory_places_app/widgets/location_input.dart';
-import 'package:memory_places_app/widgets/primary_button.dart';
+import 'package:memory_places_app/viewmodels/category_viewmodel.dart';
+import 'package:memory_places_app/viewmodels/place_viewmodel.dart';
+import 'package:memory_places_app/views/widgets/input_field.dart';
+import 'package:memory_places_app/views/widgets/location_input.dart';
+import 'package:memory_places_app/views/widgets/primary_button.dart';
 
 final formatter = DateFormat.yMd();
 
-class EditPlaceDetailsScreen extends StatefulWidget {
+class EditPlaceDetailsScreen extends ConsumerStatefulWidget {
   const EditPlaceDetailsScreen({super.key, required this.place});
 
   final Place place;
 
   @override
-  State<EditPlaceDetailsScreen> createState() => _EditPlaceDetailsScreenState();
+  ConsumerState<EditPlaceDetailsScreen> createState() =>
+      _EditPlaceDetailsScreenState();
 }
 
-class _EditPlaceDetailsScreenState extends State<EditPlaceDetailsScreen> {
+class _EditPlaceDetailsScreenState
+    extends ConsumerState<EditPlaceDetailsScreen> {
   final _titleController = TextEditingController();
   final _locationController = TextEditingController();
   final _notesController = TextEditingController();
-  final _placeService = PlaceService();
-  final _storageService = StorageService();
-  var _isSaving = false;
 
   DateTime? _selectedLastVisit;
   File? _selectedImage;
   Category? _selectedCategory;
-  List<Category> _categories = [];
   double? _latitude;
   double? _longitude;
   String _street = '';
@@ -42,49 +40,20 @@ class _EditPlaceDetailsScreenState extends State<EditPlaceDetailsScreen> {
   String _postalCode = '';
   String _country = '';
 
-  final _categoryService = CategoryService();
-
-  Future<void> _loadCategories() async {
-    final defaultCategories = await _categoryService.getDefaultCategories();
-
-    final userCategories = await _categoryService.getUserCategories(
-      widget.place.userId,
-    );
-
-    final categories = [...defaultCategories, ...userCategories];
-
-    if (!mounted) return;
-
-    setState(() {
-      _categories = categories;
-
-      _selectedCategory = categories.firstWhere(
-        (category) => category.id == widget.place.category.id,
-        orElse: () => categories.first,
-      );
-    });
-  }
-
   Future<void> _saveChanges() async {
-    setState(() {
-      _isSaving = true;
-    });
+    final placeViewModel = ref.read(placeViewModelProvider);
+    final categories = ref.read(categoryViewModelProvider).categories;
 
-    String? imageUrl = widget.place.imageUrl;
-
-    if (_selectedImage != null) {
-      imageUrl = await _storageService.uploadPlaceImage(
-        image: _selectedImage!,
-        userId: widget.place.userId,
-        placeId: widget.place.id,
-      );
-    }
+    _selectedCategory ??= categories.firstWhere(
+      (c) => c.id == widget.place.category.id,
+      orElse: () => categories.first,
+    );
 
     final updatedPlace = Place(
       id: widget.place.id,
       title: _titleController.text.trim(),
       description: _notesController.text.trim(),
-      imageUrl: imageUrl,
+      imageUrl: widget.place.imageUrl,
       location: PlaceLocation(
         latitude: _latitude ?? widget.place.location.latitude,
         longitude: _longitude ?? widget.place.location.longitude,
@@ -100,39 +69,34 @@ class _EditPlaceDetailsScreenState extends State<EditPlaceDetailsScreen> {
       reminderSent: widget.place.reminderSent,
     );
 
-    try {
-      await _placeService.updatePlace(
-        userId: widget.place.userId,
-        place: updatedPlace,
-      );
+    await placeViewModel.updatePlace(
+      widget.place.userId,
+      updatedPlace,
+      image: _selectedImage,
+    );
 
-      if (!mounted) return;
+    if (!mounted) return;
 
-      Navigator.of(context).pop(true);
-    } catch (error) {
-      if (!mounted) return;
+    if (placeViewModel.error != null) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Could not update place.')));
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isSaving = false;
-        });
-      }
+      return;
     }
+
+    Navigator.of(context).pop(true);
   }
 
   @override
   void initState() {
     super.initState();
-    _loadCategories();
-
+    Future(() {
+      ref.read(categoryViewModelProvider).fetchCategories(widget.place.userId);
+    });
     _titleController.text = widget.place.title;
     _locationController.text = widget.place.location.street;
     _notesController.text = widget.place.description;
     _selectedLastVisit = widget.place.lastVisit;
-
     _latitude = widget.place.location.latitude;
     _longitude = widget.place.location.longitude;
     _street = widget.place.location.street;
@@ -141,23 +105,16 @@ class _EditPlaceDetailsScreenState extends State<EditPlaceDetailsScreen> {
     _country = widget.place.location.country;
   }
 
-  void _setImage(File image) {
-    setState(() {
-      _selectedImage = image;
-    });
-  }
-
   Future<void> _pickImage(ImageSource source) async {
     final imagePicker = ImagePicker();
-
     final pickedImage = await imagePicker.pickImage(
       source: source,
       maxHeight: 600,
     );
-
     if (pickedImage == null) return;
-
-    _setImage(File(pickedImage.path));
+    setState(() {
+      _selectedImage = File(pickedImage.path);
+    });
   }
 
   void _showImageSourceOptions() {
@@ -218,6 +175,8 @@ class _EditPlaceDetailsScreenState extends State<EditPlaceDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final categoryViewModel = ref.watch(categoryViewModelProvider);
+    final placeViewModel = ref.watch(placeViewModelProvider);
     final hasExistingImage =
         widget.place.imageUrl != null &&
         widget.place.imageUrl!.trim().isNotEmpty;
@@ -333,9 +292,13 @@ class _EditPlaceDetailsScreenState extends State<EditPlaceDetailsScreen> {
                 ),
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<Category>(
-                    value: _selectedCategory,
+                    value:
+                        _selectedCategory ??
+                        categoryViewModel.categories
+                            .where((c) => c.id == widget.place.category.id)
+                            .firstOrNull,
                     isExpanded: true,
-                    items: _categories.map((category) {
+                    items: categoryViewModel.categories.map((category) {
                       return DropdownMenuItem(
                         value: category,
                         child: Text(category.title),
@@ -424,8 +387,8 @@ class _EditPlaceDetailsScreenState extends State<EditPlaceDetailsScreen> {
               ),
               const SizedBox(height: 50),
               PrimaryButton(
-                btnText: _isSaving ? 'Saving...' : 'Save changes',
-                onPress: _isSaving ? () {} : _saveChanges,
+                btnText: placeViewModel.loading ? 'Saving...' : 'Save changes',
+                onPress: placeViewModel.loading ? () {} : _saveChanges,
               ),
               const SizedBox(height: 20),
             ],

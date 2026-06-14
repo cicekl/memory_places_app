@@ -1,82 +1,75 @@
 import 'package:flutter/material.dart';
-import 'package:memory_places_app/models/category.dart';
-import 'package:memory_places_app/screens/new_category.dart';
-import 'package:memory_places_app/services/auth_service.dart';
-import 'package:memory_places_app/services/category_service.dart';
-import 'package:memory_places_app/services/place_service.dart';
-import 'package:memory_places_app/widgets/category_tile.dart';
-import 'package:memory_places_app/widgets/primary_button.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:memory_places_app/viewmodels/auth_viewmodel.dart';
+import 'package:memory_places_app/viewmodels/category_viewmodel.dart';
+import 'package:memory_places_app/views/screens/settings/new_category.dart';
+import 'package:memory_places_app/views/widgets/category_tile.dart';
+import 'package:memory_places_app/views/widgets/primary_button.dart';
 
-class ManageCategoriesScreen extends StatefulWidget {
+class ManageCategoriesScreen extends ConsumerStatefulWidget {
   const ManageCategoriesScreen({super.key});
 
   @override
-  State<ManageCategoriesScreen> createState() => _ManageCategoriesScreenState();
+  ConsumerState<ManageCategoriesScreen> createState() =>
+      _ManageCategoriesScreenState();
 }
 
-class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
-  void _openNewCategory(BuildContext context) async {
+class _ManageCategoriesScreenState
+    extends ConsumerState<ManageCategoriesScreen> {
+  void _openNewCategory() async {
     final categoryAdded = await Navigator.of(
       context,
     ).push(MaterialPageRoute(builder: (context) => const NewCategoryScreen()));
 
     if (categoryAdded == true) {
-      _loadCustomCategories();
+      final authViewModel = ref.read(authViewModelProvider);
+      final categoryViewModel = ref.read(categoryViewModelProvider);
+
+      final userId = authViewModel.userId;
+
+      if (userId != null) {
+        categoryViewModel.fetchCategories(userId);
+      }
     }
   }
 
-  final _categoryService = CategoryService();
-  final _authService = AuthService();
-  final _placeService = PlaceService();
-
-  List<Category> _customCategories = [];
-  var _isLoading = true;
-
-  Future<void> _loadCustomCategories() async {
-    final user = _authService.currentUser;
-
-    if (user == null) return;
-
-    final categories = await _categoryService.getUserCategories(user.uid);
-
-    if (!mounted) return;
-
-    setState(() {
-      _customCategories = categories;
-      _isLoading = false;
-    });
-  }
-
   Future<void> _deleteCategory(String categoryId) async {
-    final user = _authService.currentUser;
+    final authViewModel = ref.read(authViewModelProvider);
+    final categoryViewModel = ref.read(categoryViewModelProvider);
 
-    if (user == null) return;
+    final userId = authViewModel.userId;
 
-    await _placeService.deletePlacesByCategory(
-      userId: user.uid,
-      categoryId: categoryId,
-    );
+    if (userId == null) return;
 
-    await _categoryService.deleteUserCategory(
-      userId: user.uid,
-      categoryId: categoryId,
-    );
-
-    if (!mounted) return;
-
-    setState(() {
-      _customCategories.removeWhere((category) => category.id == categoryId);
-    });
+    await categoryViewModel.deleteCategory(userId, categoryId);
   }
 
   @override
   void initState() {
     super.initState();
-    _loadCustomCategories();
+
+    Future(() {
+      final authViewModel = ref.read(authViewModelProvider);
+      final categoryViewModel = ref.read(categoryViewModelProvider);
+
+      final userId = authViewModel.userId;
+
+      if (userId != null) {
+        categoryViewModel.fetchCategories(userId);
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    final categoryViewModel = ref.watch(categoryViewModelProvider);
+    final customCategories = categoryViewModel.categories
+        .where((c) => !c.isDefault)
+        .toList();
+    final defaultCategories = categoryViewModel.categories
+        .where((c) => c.isDefault)
+        .toList();
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.surface,
@@ -122,29 +115,19 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
                 ),
               ),
               const SizedBox(height: 10),
-              CategoryTile(
-                categoryName: 'Coffee',
-                description: 'Built-in category',
-                color: Color(0xFF4A3728),
-              ),
-              const SizedBox(height: 10),
-              CategoryTile(
-                categoryName: 'Parks',
-                description: 'Built-in category',
-                color: Color(0xFF718a2f),
-              ),
-              const SizedBox(height: 10),
-              CategoryTile(
-                categoryName: 'Date',
-                description: 'Built-in category',
-                color: Color(0xFFc66b4f),
-              ),
-              const SizedBox(height: 10),
-              CategoryTile(
-                categoryName: 'Restaurants',
-                description: 'Built-in category',
-                color: Color(0xFFe5b858),
-              ),
+              if (categoryViewModel.loading)
+                const Center(child: CircularProgressIndicator())
+              else
+                ...defaultCategories.map(
+                  (category) => Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: CategoryTile(
+                      categoryName: category.title,
+                      description: 'Built-in category',
+                      color: category.color,
+                    ),
+                  ),
+                ),
               const SizedBox(height: 20),
               Text(
                 'Custom categories',
@@ -154,19 +137,18 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
                 ),
               ),
               const SizedBox(height: 10),
-              _isLoading
+              categoryViewModel.loading
                   ? const Center(child: CircularProgressIndicator())
-                  : _customCategories.isEmpty
+                  : customCategories.isEmpty
                   ? const Text('No custom categories yet.')
                   : SizedBox(
                       height: 170,
                       child: ListView.separated(
-                        itemCount: _customCategories.length,
+                        itemCount: customCategories.length,
                         separatorBuilder: (context, index) =>
                             const SizedBox(height: 10),
                         itemBuilder: (context, index) {
-                          final category = _customCategories[index];
-
+                          final category = customCategories[index];
                           return Dismissible(
                             key: ValueKey(category.id),
                             direction: DismissDirection.endToStart,
@@ -183,9 +165,7 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
                                 size: 30,
                               ),
                             ),
-                            onDismissed: (_) {
-                              _deleteCategory(category.id);
-                            },
+                            onDismissed: (_) => _deleteCategory(category.id),
                             child: CategoryTile(
                               categoryName: category.title,
                               description: 'Custom category',
@@ -198,7 +178,7 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
               const SizedBox(height: 20),
               PrimaryButton(
                 btnText: 'Add category',
-                onPress: () => _openNewCategory(context),
+                onPress: () => _openNewCategory(),
               ),
               const SizedBox(height: 20),
             ],

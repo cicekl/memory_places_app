@@ -1,20 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:memory_places_app/models/place.dart';
-import 'package:memory_places_app/screens/edit_place_details.dart';
-import 'package:memory_places_app/services/place_service.dart';
-import 'package:memory_places_app/widgets/primary_button.dart';
+import 'package:memory_places_app/viewmodels/place_viewmodel.dart';
+import 'package:memory_places_app/views/screens/places/edit_place_details.dart';
+import 'package:memory_places_app/views/widgets/primary_button.dart';
 
-class PlaceDetailsScreen extends StatefulWidget {
+class PlaceDetailsScreen extends ConsumerStatefulWidget {
   const PlaceDetailsScreen({super.key, required this.place});
 
   final Place place;
 
   @override
-  State<PlaceDetailsScreen> createState() => _PlaceDetailsScreenState();
+  ConsumerState<PlaceDetailsScreen> createState() => _PlaceDetailsScreenState();
 }
 
-class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
+class _PlaceDetailsScreenState extends ConsumerState<PlaceDetailsScreen> {
   late Place _place;
 
   @override
@@ -23,13 +24,10 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
     _place = widget.place;
   }
 
-  final _placeService = PlaceService();
-
   Future<void> _markVisited() async {
-    await _placeService.markPlaceVisited(
-      userId: _place.userId,
-      placeId: _place.id,
-    );
+    await ref
+        .read(placeViewModelProvider)
+        .markPlaceVisited(_place.userId, _place.id);
 
     setState(() {
       _place = Place(
@@ -48,11 +46,11 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
   }
 
   Future<void> _deletePlace() async {
-    await _placeService.deletePlace(userId: _place.userId, placeId: _place.id);
-
     if (!mounted) return;
-
     Navigator.of(context).pop(true);
+    await ref
+        .read(placeViewModelProvider)
+        .deletePlace(_place.userId, _place.id);
   }
 
   @override

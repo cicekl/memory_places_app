@@ -1,68 +1,79 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:memory_places_app/models/category.dart';
 import 'package:memory_places_app/models/place.dart';
-import 'package:memory_places_app/services/auth_service.dart';
-import 'package:memory_places_app/services/category_service.dart';
-import 'package:memory_places_app/services/notification_service.dart';
-import 'package:memory_places_app/services/place_service.dart';
-import 'package:memory_places_app/services/storage_service.dart';
-import 'package:memory_places_app/widgets/image_input.dart';
-import 'package:memory_places_app/widgets/input_field.dart';
-import 'package:memory_places_app/widgets/location_input.dart';
+import 'package:memory_places_app/viewmodels/auth_viewmodel.dart';
+import 'package:memory_places_app/viewmodels/category_viewmodel.dart';
+import 'package:memory_places_app/viewmodels/place_viewmodel.dart';
+import 'package:memory_places_app/views/widgets/image_input.dart';
+import 'package:memory_places_app/views/widgets/input_field.dart';
+import 'package:memory_places_app/views/widgets/location_input.dart';
 import 'dart:io';
-import 'package:memory_places_app/widgets/selectable_category.dart';
+import 'package:memory_places_app/views/widgets/selectable_category.dart';
 import 'package:uuid/uuid.dart';
 
 final formatter = DateFormat.yMd();
 const uuid = Uuid();
 
-class AddPlaceScreen extends StatefulWidget {
+class AddPlaceScreen extends ConsumerStatefulWidget {
   const AddPlaceScreen({super.key, this.initialImage});
 
   final File? initialImage;
 
   @override
-  State<AddPlaceScreen> createState() {
+  ConsumerState<AddPlaceScreen> createState() {
     return _AddPlaceScreenState();
   }
 }
 
-class _AddPlaceScreenState extends State<AddPlaceScreen> {
-  final _placeService = PlaceService();
-  final _authService = AuthService();
-  final _storageService = StorageService();
-  final _categoryService = CategoryService();
+class _AddPlaceScreenState extends ConsumerState<AddPlaceScreen> {
   double? _latitude;
   double? _longitude;
   String _street = '';
   String _city = '';
   String _postalCode = '';
   String _country = '';
-  List<Category> _categories = [];
   Category? _selectedCategory;
+  DateTime? _selectedLastVisit;
+  File? _selectedImage;
 
-  var _isSaving = false;
+  final _locationController = TextEditingController();
+  final _placeNameController = TextEditingController();
+  final _notesController = TextEditingController();
 
-  Future<void> _loadCategories() async {
-    final user = _authService.currentUser;
+  @override
+  void initState() {
+    super.initState();
+    _selectedImage = widget.initialImage;
 
-    if (user == null) return;
-    final defaultCategories = await _categoryService.getDefaultCategories();
-    final customCategories = await _categoryService.getUserCategories(user.uid);
+    Future(() {
+      final authViewModel = ref.read(authViewModelProvider);
+      final categoryViewModel = ref.read(categoryViewModelProvider);
 
-    if (!mounted) return;
+      final userId = authViewModel.userId;
 
-    setState(() {
-      _categories = [...defaultCategories, ...customCategories];
+      if (userId != null) {
+        categoryViewModel.fetchCategories(userId);
+      }
     });
   }
 
-  Future<void> _savePlace() async {
-    final user = _authService.currentUser;
+  @override
+  void dispose() {
+    _locationController.dispose();
+    _placeNameController.dispose();
+    _notesController.dispose();
+    super.dispose();
+  }
 
-    if (user == null) return;
+  Future<void> _savePlace() async {
+    final authViewModel = ref.read(authViewModelProvider);
+    final placeViewModel = ref.read(placeViewModelProvider);
+
+    final userId = authViewModel.userId;
+    if (userId == null) return;
 
     if (_placeNameController.text.trim().isEmpty ||
         _locationController.text.trim().isEmpty ||
@@ -74,83 +85,41 @@ class _AddPlaceScreenState extends State<AddPlaceScreen> {
       return;
     }
 
-    setState(() {
-      _isSaving = true;
-    });
-
     final placeId = uuid.v4();
-    String? imageUrl;
 
-    if (_selectedImage != null) {
-      imageUrl = await _storageService.uploadPlaceImage(
-        image: _selectedImage!,
-        userId: user.uid,
-        placeId: placeId,
-      );
-    }
+    final place = Place(
+      id: placeId,
+      title: _placeNameController.text.trim(),
+      description: _notesController.text.trim(),
+      location: PlaceLocation(
+        latitude: _latitude ?? 0,
+        longitude: _longitude ?? 0,
+        city: _city,
+        country: _country,
+        postalCode: _postalCode,
+        street: _street.isEmpty ? _locationController.text.trim() : _street,
+      ),
+      lastVisit: _selectedLastVisit!,
+      userId: userId,
+      category: _selectedCategory!,
+      totalVisits: 1,
+    );
 
-    try {
-      final place = Place(
-        id: placeId,
-        title: _placeNameController.text.trim(),
-        description: _notesController.text.trim(),
-        imageUrl: imageUrl,
-        location: PlaceLocation(
-          latitude: _latitude ?? 0,
-          longitude: _longitude ?? 0,
-          city: _city,
-          country: _country,
-          postalCode: _postalCode,
-          street: _street.isEmpty ? _locationController.text.trim() : _street,
-        ),
-        lastVisit: _selectedLastVisit!,
-        userId: user.uid,
-        category: _selectedCategory!,
-        totalVisits: 1,
-      );
+    await placeViewModel.addPlace(place, image: _selectedImage);
 
-      await _placeService.addPlace(place);
+    if (!mounted) return;
 
-      try {
-        await NotificationService().createPlaceAddedNotification(
-          userId: user.uid,
-          placeName: _placeNameController.text.trim(),
-        );
-      } catch (error) {
-        debugPrint('Notification error: $error');
-      }
-
-      if (!mounted) return;
-
-      Navigator.of(context).pop();
-    } catch (error) {
-      if (!mounted) return;
+    if (placeViewModel.error != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Could not save place. Please try again.'),
         ),
       );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isSaving = false;
-        });
-      }
+      return;
     }
-  }
 
-  @override
-  void dispose() {
-    _locationController.dispose();
-    _placeNameController.dispose();
-    _notesController.dispose();
-    super.dispose();
+    Navigator.of(context).pop();
   }
-
-  DateTime? _selectedLastVisit;
-  final _locationController = TextEditingController();
-  final _placeNameController = TextEditingController();
-  final _notesController = TextEditingController();
 
   void _close() {
     Navigator.of(context).pop();
@@ -176,32 +145,16 @@ class _AddPlaceScreenState extends State<AddPlaceScreen> {
     });
   }
 
-  @override
-  void initState() {
-    super.initState();
-    _loadCategories();
-    _selectedImage = widget.initialImage;
-  }
-
-  File? _selectedImage;
-
-  void _setImage(File image) {
-    setState(() {
-      _selectedImage = image;
-    });
-  }
-
   Future<void> _pickImage(ImageSource source) async {
     final imagePicker = ImagePicker();
-
     final pickedImage = await imagePicker.pickImage(
       source: source,
       maxHeight: 600,
     );
-
     if (pickedImage == null) return;
-
-    _setImage(File(pickedImage.path));
+    setState(() {
+      _selectedImage = File(pickedImage.path);
+    });
   }
 
   void _showImageSourceOptions() {
@@ -236,6 +189,9 @@ class _AddPlaceScreenState extends State<AddPlaceScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final categoryViewModel = ref.watch(categoryViewModelProvider);
+    final placeViewModel = ref.watch(placeViewModelProvider);
+
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
@@ -362,7 +318,7 @@ class _AddPlaceScreenState extends State<AddPlaceScreen> {
                       crossAxisSpacing: 10,
                       mainAxisSpacing: 10,
                       childAspectRatio: 4.2,
-                      children: _categories.map((category) {
+                      children: categoryViewModel.categories.map((category) {
                         return SelectableCategory(
                           categoryName: category.title,
                           isSelected: _selectedCategory?.id == category.id,
@@ -482,9 +438,9 @@ class _AddPlaceScreenState extends State<AddPlaceScreen> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Color(0xFF8A9B61),
                           ),
-                          onPressed: _isSaving ? null : _savePlace,
+                          onPressed: placeViewModel.loading ? null : _savePlace,
                           child: Text(
-                            _isSaving ? 'Saving...' : 'Save place',
+                            placeViewModel.loading ? 'Saving...' : 'Save place',
                             style: TextStyle(
                               fontSize: 18,
                               color: Color(0xFFF5F1E8),

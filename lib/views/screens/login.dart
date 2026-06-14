@@ -1,25 +1,24 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:memory_places_app/screens/forgot_password.dart';
-import 'package:memory_places_app/screens/register.dart';
-import 'package:memory_places_app/screens/tabs.dart';
-import 'package:memory_places_app/services/auth_service.dart';
-import 'package:memory_places_app/widgets/primary_button.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:memory_places_app/viewmodels/auth_viewmodel.dart';
+import 'package:memory_places_app/views/screens/forgot_password.dart';
+import 'package:memory_places_app/views/screens/register.dart';
+import 'package:memory_places_app/views/screens/tabs.dart';
+import 'package:memory_places_app/views/widgets/primary_button.dart';
 
-class LoginScreen extends StatefulWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() {
+  ConsumerState<LoginScreen> createState() {
     return _LoginScreenState();
   }
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   var _enteredEmail = '';
   var _enteredPassword = '';
-  final _authService = AuthService();
 
   void _submit() async {
     final isValid = _formKey.currentState!.validate();
@@ -30,8 +29,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
     _formKey.currentState!.save();
 
+    final authViewModel = ref.read(authViewModelProvider);
+
     try {
-      await _authService.signIn(
+      await authViewModel.signIn(
         email: _enteredEmail,
         password: _enteredPassword,
       );
@@ -44,13 +45,7 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (error) {
       ScaffoldMessenger.of(context).clearSnackBars();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            error is FirebaseAuthException
-                ? error.message ?? 'Authetication failed'
-                : 'Something went wrong',
-          ),
-        ),
+        SnackBar(content: Text(authViewModel.error ?? 'Something went wrong')),
       );
     }
   }
@@ -63,6 +58,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final authViewModel = ref.watch(authViewModelProvider);
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       body: Center(
@@ -187,7 +183,12 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                         const SizedBox(height: 30),
-                        PrimaryButton(btnText: 'Sign In', onPress: _submit),
+                        PrimaryButton(
+                          btnText: authViewModel.loading
+                              ? 'Signing in...'
+                              : 'Sign In',
+                          onPress: authViewModel.loading ? () {} : _submit,
+                        ),
                         const SizedBox(height: 40),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
